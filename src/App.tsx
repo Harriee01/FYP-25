@@ -5,6 +5,13 @@ import { RegisterForm } from "./components/auth/RegisterForm";
 import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Dashboard } from "./components/dashboard/Dashboard";
+import { QualityBenchmarks } from "./components/benchmarks/QualityBenchmarks";
+import { QualityReports } from "./components/reports/QualityReports";
+import { AlertsPanel } from "./components/alerts/AlertsPanel";
+import { Analytics } from "./components/analytics/Analytics";
+import { TeamManagement } from "./components/team/TeamManagement";
+import { AuditTrail } from "./components/audit/AuditTrail";
+import { Settings } from "./components/settings/Settings";
 
 const AuthenticatedApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -12,41 +19,23 @@ const AuthenticatedApp: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActiveTab} />;
       case "benchmarks":
-        return (
-          <div className="p-6 text-hunter-900">
-            Quality Benchmarks - Coming Soon
-          </div>
-        );
+        return <QualityBenchmarks />;
       case "reports":
-        return (
-          <div className="p-6 text-hunter-900">
-            Quality Reports - Coming Soon
-          </div>
-        );
+        return <QualityReports />;
       case "alerts":
-        return <div className="p-6 text-hunter-900">Alerts - Coming Soon</div>;
+        return <AlertsPanel />;
       case "analytics":
-        return (
-          <div className="p-6 text-hunter-900">Analytics - Coming Soon</div>
-        );
+        return <Analytics />;
       case "team":
-        return (
-          <div className="p-6 text-hunter-900">
-            Team Management - Coming Soon
-          </div>
-        );
+        return <TeamManagement />;
       case "audit":
-        return (
-          <div className="p-6 text-hunter-900">Audit Trail - Coming Soon</div>
-        );
+        return <AuditTrail />;
       case "settings":
-        return (
-          <div className="p-6 text-hunter-900">Settings - Coming Soon</div>
-        );
+        return <Settings />;
       default:
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActiveTab} />;
     }
   };
 
