@@ -1,7 +1,7 @@
 import React from "react";
-import { Bell, LogOut, Settings, Shield } from "lucide-react";
+import { Bell, Settings, Shield } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { Button } from "../ui/Button";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
