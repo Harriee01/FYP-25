@@ -1,63 +1,109 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+    darkMode: ["class"],
+    content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-    extend: {
-      colors: {
-        hunter: {
-          50: "#f0f4f1",
-          100: "#dce8de",
-          200: "#bad1bf",
-          300: "#92b59a",
-          400: "#6b9474",
-          500: "#4a6741",
-          600: "#3d5536",
-          700: "#32442c",
-          800: "#2a3724",
-          900: "#242f20",
-          950: "#131a11",
-        },
-        fern: {
-          50: "#f1f8f2",
-          100: "#ddeee0",
-          200: "#bdddc4",
-          300: "#92c49d",
-          400: "#65a572",
-          500: "#4a8b54",
-          600: "#3a6f42",
-          700: "#305836",
-          800: "#29472d",
-          900: "#233b26",
-          950: "#112014",
-        },
-        sage: {
-          50: "#f6f7f4",
-          100: "#e9ebe4",
-          200: "#d4d8ca",
-          300: "#b8bfa7",
-          400: "#9ba285",
-          500: "#7f8669",
-          600: "#636a52",
-          700: "#4f5443",
-          800: "#424538",
-          900: "#393c30",
-          950: "#1d1f18",
-        },
-        ivory: {
-          50: "#fefefe",
-          100: "#fdfdfc",
-          200: "#faf9f7",
-          300: "#f6f4f0",
-          400: "#f0ede6",
-          500: "#e8e4da",
-          600: "#d4cfc2",
-          700: "#b8b1a0",
-          800: "#9a9284",
-          900: "#7f786c",
-          950: "#413e36",
-        },
-      },
-    },
+  	extend: {
+  		colors: {
+  			hunter: {
+  				'50': '#f0f4f1',
+  				'100': '#dce8de',
+  				'200': '#bad1bf',
+  				'300': '#92b59a',
+  				'400': '#6b9474',
+  				'500': '#4a6741',
+  				'600': '#3d5536',
+  				'700': '#32442c',
+  				'800': '#2a3724',
+  				'900': '#242f20',
+  				'950': '#131a11'
+  			},
+  			fern: {
+  				'50': '#f1f8f2',
+  				'100': '#ddeee0',
+  				'200': '#bdddc4',
+  				'300': '#92c49d',
+  				'400': '#65a572',
+  				'500': '#4a8b54',
+  				'600': '#3a6f42',
+  				'700': '#305836',
+  				'800': '#29472d',
+  				'900': '#233b26',
+  				'950': '#112014'
+  			},
+  			sage: {
+  				'50': '#f6f7f4',
+  				'100': '#e9ebe4',
+  				'200': '#d4d8ca',
+  				'300': '#b8bfa7',
+  				'400': '#9ba285',
+  				'500': '#7f8669',
+  				'600': '#636a52',
+  				'700': '#4f5443',
+  				'800': '#424538',
+  				'900': '#393c30',
+  				'950': '#1d1f18'
+  			},
+  			ivory: {
+  				'50': '#fefefe',
+  				'100': '#fdfdfc',
+  				'200': '#faf9f7',
+  				'300': '#f6f4f0',
+  				'400': '#f0ede6',
+  				'500': '#e8e4da',
+  				'600': '#d4cfc2',
+  				'700': '#b8b1a0',
+  				'800': '#9a9284',
+  				'900': '#7f786c',
+  				'950': '#413e36'
+  			},
+  			background: 'hsl(var(--background))',
+  			foreground: 'hsl(var(--foreground))',
+  			card: {
+  				DEFAULT: 'hsl(var(--card))',
+  				foreground: 'hsl(var(--card-foreground))'
+  			},
+  			popover: {
+  				DEFAULT: 'hsl(var(--popover))',
+  				foreground: 'hsl(var(--popover-foreground))'
+  			},
+  			primary: {
+  				DEFAULT: 'hsl(var(--primary))',
+  				foreground: 'hsl(var(--primary-foreground))'
+  			},
+  			secondary: {
+  				DEFAULT: 'hsl(var(--secondary))',
+  				foreground: 'hsl(var(--secondary-foreground))'
+  			},
+  			muted: {
+  				DEFAULT: 'hsl(var(--muted))',
+  				foreground: 'hsl(var(--muted-foreground))'
+  			},
+  			accent: {
+  				DEFAULT: 'hsl(var(--accent))',
+  				foreground: 'hsl(var(--accent-foreground))'
+  			},
+  			destructive: {
+  				DEFAULT: 'hsl(var(--destructive))',
+  				foreground: 'hsl(var(--destructive-foreground))'
+  			},
+  			border: 'hsl(var(--border))',
+  			input: 'hsl(var(--input))',
+  			ring: 'hsl(var(--ring))',
+  			chart: {
+  				'1': 'hsl(var(--chart-1))',
+  				'2': 'hsl(var(--chart-2))',
+  				'3': 'hsl(var(--chart-3))',
+  				'4': 'hsl(var(--chart-4))',
+  				'5': 'hsl(var(--chart-5))'
+  			}
+  		},
+  		borderRadius: {
+  			lg: 'var(--radius)',
+  			md: 'calc(var(--radius) - 2px)',
+  			sm: 'calc(var(--radius) - 4px)'
+  		}
+  	}
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
