@@ -1,14 +1,14 @@
-import React from 'react';
-import { 
-  BarChart3, 
-  Users, 
-  ClipboardCheck, 
-  AlertTriangle, 
-  FileText, 
+import React from "react";
+import {
+  BarChart3,
+  Users,
+  ClipboardCheck,
+  AlertTriangle,
+  FileText,
   Settings,
-  Home
-} from 'lucide-react';
-import { clsx } from 'clsx';
+  Home,
+} from "lucide-react";
+import { clsx } from "clsx";
 
 interface SidebarProps {
   activeTab: string;
@@ -16,14 +16,14 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'benchmarks', label: 'Quality Benchmarks', icon: ClipboardCheck },
-  { id: 'reports', label: 'Quality Reports', icon: FileText },
-  { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'team', label: 'Team Management', icon: Users },
-  { id: 'audit', label: 'Audit Trail', icon: FileText },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: "dashboard", label: "Dashboard", icon: Home },
+  { id: "benchmarks", label: "Quality Benchmarks", icon: ClipboardCheck },
+  { id: "reports", label: "Quality Reports", icon: FileText },
+  { id: "alerts", label: "Alerts", icon: AlertTriangle },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "team", label: "Team Management", icon: Users },
+  { id: "audit", label: "Audit Trail", icon: FileText },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
@@ -37,10 +37,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={clsx(
-                'w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200',
+                "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200",
                 activeTab === item.id
-                  ? 'bg-fern-600 text-ivory-50 shadow-lg'
-                  : 'text-sage-200 hover:bg-hunter-800 hover:text-ivory-100'
+                  ? "bg-fern-600 text-ivory-50 shadow-lg"
+                  : "text-sage-200 hover:bg-hunter-800 hover:text-ivory-100"
               )}
             >
               <Icon className="h-5 w-5" />

@@ -1,4 +1,4 @@
-import React from "react";
+/*import React from "react";
 import { Bell, Settings, Shield } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -76,3 +76,4 @@ export const Header: React.FC = () => {
     </header>
   );
 };
+*/

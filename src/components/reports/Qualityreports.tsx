@@ -10,7 +10,7 @@ import {
 import { Card, CardHeader, CardTitle } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { supabase } from "../../lib/supabase.ts";
+import { supabase } from "../../supabase.ts";
 import { QualityReport } from "../../types";
 import { format } from "date-fns";
 

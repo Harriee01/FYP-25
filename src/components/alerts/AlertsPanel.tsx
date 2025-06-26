@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { AlertTriangle, CheckCircle, Clock, Filter } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card.tsx";
 import { Button } from "../ui/Button.tsx";
-import { supabase } from "../../lib/supabase.ts";
+import { supabase } from "../../supabase.ts";
 import { Alert } from "../../types/index.ts";
 import { format } from "date-fns";
 
