@@ -3,8 +3,17 @@ import { Shield } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { Card } from "../ui/Card";
+
 import { Spinner } from "../ui/spinner";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import { Label } from "@/components/ui/label";
 
 interface LoginFormProps {
   onShowRegister: () => void;
@@ -37,66 +46,77 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sage-50 via-ivory-100 to-fern-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-4 bg-ivory-50 border-sage-200 shadow-xl">
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-hunter-100 rounded-full">
-              <Shield className="h-8 w-8 text-hunter-700" />
+            <div className="p-3 bg-green-100 rounded-full">
+              <Shield className="h-8 w-8 text-green-700" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-hunter-900">QualityChain</h1>
-          <p className="text-sage-700 mt-2">
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            Suite
+          </CardTitle>
+          <CardDescription className="text-gray-600">
             Blockchain Quality Management System
-          </p>
-        </div>
+          </CardDescription>
+        </CardHeader>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-700 text-sm">{error}</p>
+        <CardContent>
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@company.com"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+                <a
+                  href="#"
+                  className="ml-auto inline-block text-sm underline-offset-4 hover:underline text-gray-600"
+                >
+                  Forgot your password?
+                </a>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="password"
+                required
+                disabled={isLoading}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSubmit(e);
+                  }
+                }}
+              />
+            </div>
           </div>
-        )}
+        </CardContent>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-hunter-900 mb-2"
-            >
-              Email Address
-            </label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@company.com"
-              required
-              disabled={isLoading}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-hunter-900 mb-2"
-            >
-              Password
-            </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              disabled={isLoading}
-              className="w-full"
-            />
-          </div>
-
-          <Button type="submit" className="w-full" disabled={isLoading}>
+        <CardFooter className="flex-col gap-4">
+          <Button
+            className="w-full"
+            disabled={isLoading}
+            onClick={handleSubmit}
+          >
             {isLoading ? (
               <>
                 <Spinner />
@@ -106,20 +126,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
               "Sign In"
             )}
           </Button>
-        </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sage-700">
-            Don't have an organization account?{" "}
-            <button
-              onClick={onShowRegister}
-              disabled={isLoading}
-              className="text-hunter-700 hover:text-hunter-800 font-medium underline decoration-hunter-300 hover:decoration-hunter-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Register Organization
-            </button>
-          </p>
-        </div>
+          {onShowRegister && (
+            <div className="text-center">
+              <p className="text-gray-600 text-sm">
+                Don't have an organization account?{" "}
+                <button
+                  onClick={onShowRegister}
+                  disabled={isLoading}
+                  className="text-green-700 hover:text-green-800 font-medium underline underline-offset-4 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Register Organization
+                </button>
+              </p>
+            </div>
+          )}
+        </CardFooter>
       </Card>
     </div>
   );

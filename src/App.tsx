@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { LoginForm } from "./components/auth/LoginForm";
+import LoginForm from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import {} from "./components/layout/Header";
 import { Dashboard } from "./components/dashboard/Dashboard";
@@ -26,7 +26,6 @@ import {
   Map,
   Settings2,
 } from "lucide-react";
-import TopHeaderSection from "./components/dashboard/alert";
 
 const AuthenticatedApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
