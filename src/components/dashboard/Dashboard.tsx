@@ -122,7 +122,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       change: "+12%",
       trend: "up",
       icon: BarChart3,
-      color: "fern",
+      color: "#1ca9c9",
     },
     {
       title: "Compliance Rate",
@@ -130,7 +130,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       change: "+2.1%",
       trend: "up",
       icon: CheckCircle,
-      color: "fern",
+      color: "#1ca9c9",
     },
     {
       title: "Active Alerts",
@@ -138,7 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       change: "-3",
       trend: "down",
       icon: AlertTriangle,
-      color: "red",
+      color: "#1ca9c9",
     },
     {
       title: "Team Members",
@@ -146,7 +146,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       change: "+2",
       trend: "up",
       icon: Users,
-      color: "hunter",
+      color: "#1ca9c9",
     },
   ];
 

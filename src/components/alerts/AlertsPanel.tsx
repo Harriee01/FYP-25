@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, CheckCircle, Clock, Filter } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card.tsx";
 import { Button } from "../ui/Button.tsx";
 import { supabase } from "../../supabase.ts";
@@ -205,8 +205,8 @@ export const AlertsPanel: React.FC = () => {
                           "MMM dd, yyyy HH:mm"
                         )}
                       </span>
-                      {alert.report?.benchmark?.name && (
-                        <span>Related to: {alert.report.benchmark.name}</span>
+                      {alert.reportId && (
+                        <span>Related report ID: {alert.reportId}</span>
                       )}
                     </div>
                   </div>
