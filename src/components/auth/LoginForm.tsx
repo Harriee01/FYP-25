@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-
 import { Spinner } from "../ui/spinner";
 import {
   Card,
@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 
 interface LoginFormProps {
-  onShowRegister: () => void;
+  onShowRegister?: () => void; // Made optional since we'll handle navigation internally
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
@@ -25,6 +25,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +34,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
 
     try {
       await login(email, password);
+      // Navigate to app/dashboard after successful login
+      navigate("/app");
     } catch (error) {
       console.error("Login failed:", error);
       setError(
@@ -43,6 +46,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleShowRegister = () => {
+    if (onShowRegister) {
+      onShowRegister(); // Call parent callback if provided
+    }
+    navigate("/register"); // Navigate to register page
   };
 
   return (
@@ -127,23 +137,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
             )}
           </Button>
 
-          {onShowRegister && (
-            <div className="text-center">
-              <p className="text-gray-600 text-sm">
-                Don't have an organization account?{" "}
-                <button
-                  onClick={onShowRegister}
-                  disabled={isLoading}
-                  className="text-green-700 hover:text-green-800 font-medium underline underline-offset-4 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Register Organization
-                </button>
-              </p>
-            </div>
-          )}
+          <div className="text-center">
+            <p className="text-gray-600 text-sm">
+              Don't have an organization account?{" "}
+              <button
+                onClick={handleShowRegister}
+                disabled={isLoading}
+                className="text-green-700 hover:text-green-800 font-medium underline underline-offset-4 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Register Organization
+              </button>
+            </p>
+          </div>
         </CardFooter>
       </Card>
     </div>
   );
 };
+
 export default LoginForm;

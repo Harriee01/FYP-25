@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Button } from "../ui/Button";
+import { useNavigate } from "react-router-dom";
 
 export default function Suite() {
   const [animationStage, setAnimationStage] = useState("initial");
@@ -11,13 +13,14 @@ export default function Suite() {
 
     const timer2 = setTimeout(() => {
       setAnimationStage("buttonsAppearing");
-    }, 2500); // Start button animation 1.5 seconds after title starts moving
+    }, 2000); // Start button animation 2 seconds after title starts moving
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
   }, []);
+  const navigate = useNavigate();
 
   const gradientStyle = {
     background:
@@ -35,11 +38,17 @@ export default function Suite() {
       <div className="text-center">
         <div
           className={`text-8xl md:text-9xl font-semibold tracking-tight transition-all duration-1000 ease-out ${
-            animationStage === "initial" ? "mb-0" : "mb-3 -translate-y-8"
+            animationStage === "initial" ? "mb-0" : " -translate-y-8"
           }`}
           style={gradientStyle}
         >
-          suite
+          suite.
+          <p
+            className="text-xl md:text-2xl font-semibold tracking-tight"
+            style={gradientStyle}
+          >
+            a blockchain platform for all corporate environments
+          </p>
         </div>
 
         <div
@@ -49,7 +58,8 @@ export default function Suite() {
               : "opacity-0 translate-y-8"
           }`}
         >
-          <button
+          <Button
+            onClick={() => navigate("/register")}
             className="px-6 py-2 rounded-lg font-medium text-base transition-all duration-200 hover:scale-105 hover:shadow-lg"
             style={{
               background:
@@ -58,9 +68,10 @@ export default function Suite() {
             }}
           >
             Get Started
-          </button>
+          </Button>
 
-          <button
+          <Button
+            onClick={() => navigate("/login")}
             className="px-6 py-2 rounded-lg font-medium text-base border-2 transition-all duration-200 hover:scale-105 hover:shadow-lg"
             style={{
               borderColor: "#55872e",
@@ -68,7 +79,7 @@ export default function Suite() {
             }}
           >
             Login
-          </button>
+          </Button>
         </div>
       </div>
     </div>
