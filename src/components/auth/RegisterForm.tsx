@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Shield, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -15,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 
 interface RegisterFormProps {
-  onShowLogin: () => void;
+  onShowLogin?: () => void; // Made optional since we'll handle navigation internally
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onShowLogin }) => {
@@ -30,6 +31,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onShowLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { registerOrganization } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +54,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onShowLogin }) => {
           email: formData.adminEmail,
         }
       );
+      // Navigate to app/dashboard after successful registration
+      navigate("/app");
     } catch (error) {
       console.error("Registration failed:", error);
       setError(
@@ -64,6 +68,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onShowLogin }) => {
     }
   };
 
+  const handleShowLogin = () => {
+    if (onShowLogin) {
+      onShowLogin(); // Call parent callback if provided
+    }
+    navigate("/login"); // Navigate to login page
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -73,7 +84,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onShowLogin }) => {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <button
-            onClick={onShowLogin}
+            onClick={handleShowLogin}
             className="flex items-center text-gray-600 hover:text-gray-800 mb-4 transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
