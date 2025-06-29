@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card";
 import { QuickActions } from "./QuickActions";
-import { supabase } from "../../lib/supabase.ts";
+import { supabase } from "../../supabase.ts";
 import { format } from "date-fns";
 
 interface DashboardStats {
@@ -94,7 +94,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         teamMembers: users?.length || 0,
       });
 
-      setRecentReports(recentReportsData || []);
+      setRecentReports(
+        (recentReportsData || []).map((report: any) => ({
+          id: report.id,
+          value: report.value,
+          status: report.status,
+          createdAt: report.created_at,
+          benchmark: Array.isArray(report.benchmark)
+            ? report.benchmark[0]
+            : report.benchmark,
+          inspector: Array.isArray(report.inspector)
+            ? report.inspector[0]
+            : report.inspector,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -137,14 +150,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-hunter-700"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -161,7 +166,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           return (
             <Card
               key={stat.title}
-              className="relative overflow-hidden bg-ivory-50 border-sage-200"
+              className="relative overflow-hidden p-4 bg-ivory-50 border-sage-200"
             >
               <div className="flex items-center justify-between">
                 <div>

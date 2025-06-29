@@ -3,8 +3,9 @@ import { Users, Plus, Edit, Trash2, Mail, Shield } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card.tsx";
 import { Button } from "../ui/Button.tsx";
 import { Input } from "../ui/Input.tsx";
-import { supabase } from "../../lib/supabase.ts";
+import { supabase } from "../../supabase.ts";
 import { User } from "../../types/index.ts";
+import { Spinner } from "../ui/spinner.tsx";
 
 export const TeamManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -68,11 +69,7 @@ export const TeamManagement: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-hunter-700"></div>
-      </div>
-    );
+    return <Spinner />;
   }
 
   return (

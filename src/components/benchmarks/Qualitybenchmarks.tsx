@@ -3,7 +3,7 @@ import { Plus, Edit, Trash2, Search, Filter } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { supabase } from "../../lib/supabase.ts";
+import { supabase } from "../../supabase.ts";
 import { QualityBenchmark } from "../../types";
 
 export const QualityBenchmarks: React.FC = () => {

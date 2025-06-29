@@ -72,7 +72,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       <CardHeader>
         <CardTitle className="text-hunter-900">Quick Actions</CardTitle>
       </CardHeader>
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 p-4 gap-4">
         {actions.map((action) => {
           const Icon = action.icon;
           return (

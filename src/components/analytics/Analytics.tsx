@@ -20,7 +20,7 @@ import {
   PieChart as PieChartIcon,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card";
-import { supabase } from "../../lib/supabase.ts";
+import { supabase } from "../../supabase.ts";
 
 const COLORS = ["#4a6741", "#4a8b54", "#7f8669", "#f0ede6"];
 

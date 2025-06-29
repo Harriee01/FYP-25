@@ -2,9 +2,10 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'quality_manager' | 'quality_inspector' | 'auditor';
+  role: "admin" | "quality_manager" | "quality_inspector" | "auditor";
   organizationId: string;
   createdAt: Date;
+  profilePicture?: "";
 }
 
 export interface Organization {
@@ -34,7 +35,7 @@ export interface QualityReport {
   id: string;
   benchmarkId: string;
   value: number;
-  status: 'compliant' | 'non_compliant' | 'warning';
+  status: "compliant" | "non_compliant" | "warning";
   notes?: string;
   inspectorId: string;
   organizationId: string;
@@ -45,7 +46,7 @@ export interface QualityReport {
 export interface AuditTrail {
   id: string;
   action: string;
-  entityType: 'benchmark' | 'report' | 'user' | 'organization';
+  entityType: "benchmark" | "report" | "user" | "organization";
   entityId: string;
   userId: string;
   timestamp: Date;
@@ -55,8 +56,8 @@ export interface AuditTrail {
 
 export interface Alert {
   id: string;
-  type: 'deviation' | 'compliance' | 'system';
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  type: "deviation" | "compliance" | "system";
+  severity: "low" | "medium" | "high" | "critical";
   title: string;
   message: string;
   reportId?: string;
