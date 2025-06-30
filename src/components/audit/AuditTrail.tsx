@@ -1,6 +1,7 @@
 "use client";
+import { auditAPI } from "@/lib/api"; // Add this import
+import { useState, useEffect } from "react";
 
-import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -148,7 +149,13 @@ export default function AuditDashboard() {
   const [auditErrors, setAuditErrors] = useState<FormErrors>({});
   const [memberErrors, setMemberErrors] = useState<FormErrors>({});
   const [scheduleErrors, setScheduleErrors] = useState<FormErrors>({});
-
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [backendError, setBackendError] = useState<string>("");
+  const [systemInfo, setSystemInfo] = useState<any>(null);
+  useEffect(() => {
+    checkBackendConnection();
+    loadSystemInfo();
+  }, []);
   // Validation functions
   const validateWalletAddress = (address: string): boolean => {
     const walletRegex = /^0x[a-fA-F0-9]{40}$/;
@@ -271,16 +278,36 @@ export default function AuditDashboard() {
     return Object.keys(errors).length === 0;
   };
 
+  // Replace your existing handleSubmitAudit function with this:
   const handleSubmitAudit = async () => {
     if (!validateAuditForm()) return;
+    if (!backendConnected) {
+      setBackendError("Backend API is not connected. Cannot submit audit.");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Prepare audit data for backend
+      const auditData = {
+        companyPubkey: "11111111111111111111111111111111", // Default company
+        hash: auditAPI.generateHash(newAudit.title + newAudit.metadata),
+        metadata: JSON.stringify({
+          title: newAudit.title.trim(),
+          type: newAudit.type,
+          description: newAudit.metadata.trim(),
+          submittedAt: new Date().toISOString(),
+        }),
+        auditType: { internal: {} },
+        requiresApproval: newAudit.requiresApproval,
+      };
 
+      // Call your actual backend API
+      const result = (await auditAPI.submitAudit(auditData)) as any;
+
+      // If successful, create local audit object for UI
       const audit: Audit = {
-        id: generateUniqueId(),
+        id: result.auditPubkey || generateUniqueId(),
         title: newAudit.title.trim(),
         type: newAudit.type,
         status: newAudit.requiresApproval ? "pending" : "approved",
@@ -299,9 +326,18 @@ export default function AuditDashboard() {
         requiresApproval: false,
       });
       setAuditErrors({});
-      showSuccessMessage("Audit submitted successfully!");
+
+      const txId = result.transactionId
+        ? result.transactionId.slice(0, 8) + "..."
+        : "No TX";
+      showSuccessMessage(`Audit submitted successfully! Transaction: ${txId}`);
     } catch (error) {
       console.error("Error submitting audit:", error);
+      setBackendError(
+        `Failed to submit audit: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -410,7 +446,72 @@ export default function AuditDashboard() {
       setIsLoading(false);
     }
   };
+  const checkBackendConnection = async () => {
+    try {
+      const isConnected = await auditAPI.checkConnection();
+      setBackendConnected(isConnected);
 
+      if (!isConnected) {
+        setBackendError(
+          "Backend API is not running. Please start your Express server."
+        );
+      } else {
+        setBackendError("");
+        showSuccessMessage("Backend connection test successful!"); // Add this line
+      }
+    } catch (error) {
+      setBackendConnected(false);
+      setBackendError("Failed to connect to backend API");
+    }
+  };
+
+  const loadSystemInfo = async () => {
+    try {
+      const health = await auditAPI.getSolanaHealth();
+      const status = await auditAPI.getStatus();
+      const programInfo = await auditAPI.getProgramInfo();
+
+      setSystemInfo({
+        health,
+        status,
+        programInfo,
+      });
+    } catch (error) {
+      console.error("Failed to load system info:", error);
+    }
+  };
+  const loadAuditsFromBlockchain = async () => {
+    if (!backendConnected) return;
+
+    try {
+      const result = (await auditAPI.getAllAudits()) as any;
+
+      if (result.audits && result.audits.length > 0) {
+        // Convert blockchain audits to your UI format
+        const blockchainAudits = result.audits.map(
+          (audit: any, index: number) => ({
+            id: audit.pubkey,
+            title: `Blockchain Audit #${index + 1}`,
+            type: "Blockchain",
+            status: "approved" as const,
+            submittedBy: "Blockchain User",
+            timestamp: new Date().toISOString(),
+            version: 1,
+            approvalsReceived: 1,
+            approvalsRequired: 1,
+          })
+        );
+
+        // Merge with existing audits
+        setAudits([...blockchainAudits, ...audits]);
+        showSuccessMessage(
+          `Loaded ${blockchainAudits.length} audits from blockchain!`
+        );
+      }
+    } catch (error) {
+      console.error("Failed to load blockchain audits:", error);
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -433,7 +534,7 @@ export default function AuditDashboard() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -446,6 +547,67 @@ export default function AuditDashboard() {
                     {audits.length}
                   </p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Backend Status - Add this after your Stats Cards */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Backend API Status
+                {backendConnected ? (
+                  <Badge className="bg-green-100 text-green-800">
+                    Connected
+                  </Badge>
+                ) : (
+                  <Badge className="bg-red-100 text-red-800">
+                    Disconnected
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {backendError ? (
+                <Alert className="mb-4 bg-red-50 border-red-200">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    {backendError}
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="text-sm text-gray-600">
+                  <p>✅ Connected to Express backend API</p>
+                  <p>✅ Solana devnet connection active</p>
+                  {systemInfo && (
+                    <div className="mt-2 space-y-1">
+                      <p>
+                        🔧 Program ID:{" "}
+                        {systemInfo.programInfo?.programId?.slice(0, 8)}...
+                      </p>
+                      <p>
+                        💰 Wallet: {systemInfo.status?.wallet?.slice(0, 8)}...
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={checkBackendConnection}
+                  disabled={isLoading}
+                >
+                  Test Connection
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadAuditsFromBlockchain}
+                  disabled={isLoading || !backendConnected}
+                >
+                  Load Blockchain Audits
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -941,7 +1103,128 @@ export default function AuditDashboard() {
                       </p>
                     )}
                   </div>
-                  {/* You may need to add the rest of your form fields here */}
+
+                  <div>
+                    <Label htmlFor="auditType">Audit Type *</Label>
+                    <Select
+                      value={newAudit.type}
+                      onValueChange={(value) =>
+                        setNewAudit({ ...newAudit, type: value })
+                      }
+                    >
+                      <SelectTrigger
+                        className={auditErrors.type ? "border-red-500" : ""}
+                      >
+                        <SelectValue placeholder="Select audit type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Security">Security Audit</SelectItem>
+                        <SelectItem value="Compliance">
+                          Compliance Review
+                        </SelectItem>
+                        <SelectItem value="Performance">
+                          Performance Assessment
+                        </SelectItem>
+                        <SelectItem value="Quality">
+                          Quality Assurance
+                        </SelectItem>
+                        <SelectItem value="Financial">
+                          Financial Audit
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {auditErrors.type && (
+                      <p className="text-sm text-red-600 mt-1 flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {auditErrors.type}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="auditMetadata">Audit Description *</Label>
+                    <textarea
+                      id="auditMetadata"
+                      value={newAudit.metadata}
+                      onChange={(e) =>
+                        setNewAudit({ ...newAudit, metadata: e.target.value })
+                      }
+                      placeholder="Enter detailed description of the audit"
+                      className={`w-full px-3 py-2 border rounded-md resize-none h-24 ${
+                        auditErrors.metadata
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }`}
+                      aria-describedby={
+                        auditErrors.metadata ? "auditMetadata-error" : undefined
+                      }
+                    />
+                    {auditErrors.metadata && (
+                      <p
+                        id="auditMetadata-error"
+                        className="text-sm text-red-600 mt-1 flex items-center"
+                      >
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {auditErrors.metadata}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="requiresApproval"
+                      checked={newAudit.requiresApproval}
+                      onChange={(e) =>
+                        setNewAudit({
+                          ...newAudit,
+                          requiresApproval: e.target.checked,
+                        })
+                      }
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor="requiresApproval">
+                      Requires multi-signature approval
+                    </Label>
+                  </div>
+
+                  {/* Backend Connection Status */}
+                  {backendError && (
+                    <Alert className="bg-red-50 border-red-200">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-red-800">
+                        {backendError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Submit Button */}
+                  <div className="pt-4 border-t">
+                    <Button
+                      onClick={handleSubmitAudit}
+                      disabled={isLoading || !backendConnected}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      aria-label="Submit new audit"
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Submitting to Blockchain...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4 mr-2" />
+                          Submit Audit to Blockchain
+                        </>
+                      )}
+                    </Button>
+
+                    {!backendConnected && (
+                      <p className="text-sm text-gray-500 mt-2 text-center">
+                        Backend API must be connected to submit audits
+                      </p>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
