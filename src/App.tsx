@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import LoginForm from "./components/auth/LoginForm";
+import { LoginForm } from "./components/auth/LoginForm";
+//      ^ Braces for named exports
 import { RegisterForm } from "./components/auth/RegisterForm";
 import {} from "./components/layout/Header";
 import { Dashboard } from "./components/dashboard/Dashboard";
@@ -14,6 +15,8 @@ import { Settings } from "./components/settings/Settings";
 import { inter } from "@/styles/fonts";
 import { AppSidebar } from "./components/side-bar/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+// App.tsx
+import '@solana/wallet-adapter-react-ui/styles.css';
 
 // Import icons
 import {
