@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Shield } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -14,9 +13,11 @@ import {
   CardTitle,
 } from "@/components/ui/Card";
 import { Label } from "@/components/ui/label";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"; // ✅ REQUIRED IMPORT
 
 interface LoginFormProps {
-  onShowRegister?: () => void; // Made optional since we'll handle navigation internally
+  onShowRegister: () => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
@@ -25,17 +26,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const { publicKey } = useWallet();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle traditional email/password login
+  const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
       await login(email, password);
-      // Navigate to app/dashboard after successful login
-      navigate("/app");
     } catch (error) {
       console.error("Login failed:", error);
       setError(
@@ -48,11 +48,33 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
     }
   };
 
-  const handleShowRegister = () => {
-    if (onShowRegister) {
-      onShowRegister(); // Call parent callback if provided
+  // Handle wallet login
+  const handleWalletLogin = async () => {
+    if (!publicKey) {
+      setError("Please connect your wallet first");
+      return;
     }
-    navigate("/register"); // Navigate to register page
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/verify-wallet-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: publicKey.toString() }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unauthorized wallet");
+
+      // Proceed with wallet-based auth
+      await login(data.user); // Your auth logic should support this
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Wallet verification failed"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -79,7 +101,31 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
             </div>
           )}
 
-          <div className="space-y-4">
+          {/* Wallet Login Section */}
+          <div className="mb-6">
+            <WalletMultiButton className="w-full bg-purple-600 hover:bg-purple-700 text-white" />
+            {publicKey && (
+              <Button
+                className="w-full mt-2 bg-green-600 hover:bg-green-700"
+                onClick={handleWalletLogin}
+                disabled={isLoading}
+              >
+                {isLoading ? <Spinner /> : "Verify Wallet Role"}
+              </Button>
+            )}
+          </div>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">OR</span>
+            </div>
+          </div>
+
+          {/* Traditional Login Form */}
+          <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email Address</Label>
               <Input
@@ -111,48 +157,38 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
                 placeholder="password"
                 required
                 disabled={isLoading}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSubmit(e);
-                  }
-                }}
               />
             </div>
-          </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Spinner /> Signing In...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </form>
         </CardContent>
 
         <CardFooter className="flex-col gap-4">
-          <Button
-            className="w-full"
-            disabled={isLoading}
-            onClick={handleSubmit}
-          >
-            {isLoading ? (
-              <>
-                <Spinner />
-                Signing In...
-              </>
-            ) : (
-              "Sign In"
-            )}
-          </Button>
-
-          <div className="text-center">
-            <p className="text-gray-600 text-sm">
-              Don't have an organization account?{" "}
-              <button
-                onClick={handleShowRegister}
-                disabled={isLoading}
-                className="text-green-700 hover:text-green-800 font-medium underline underline-offset-4 hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Register Organization
-              </button>
-            </p>
-          </div>
+          {onShowRegister && (
+            <div className="text-center">
+              <p className="text-gray-600 text-sm">
+                Don't have an organization account?{" "}
+                <button
+                  onClick={onShowRegister}
+                  disabled={isLoading}
+                  className="text-green-700 hover:text-green-800 font-medium underline underline-offset-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Register Organization
+                </button>
+              </p>
+            </div>
+          )}
         </CardFooter>
       </Card>
     </div>
   );
 };
-
-export default LoginForm;
