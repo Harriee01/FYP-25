@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Edit, Trash2, Search, Filter, AlertCircle } from "lucide-react";
-import { Card, CardHeader, CardTitle } from "../ui/Card";
+import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { supabase } from "../../supabase.ts";
 import { QualityBenchmark } from "../../types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@radix-ui/react-dialog";
+import { DialogHeader, DialogFooter } from "../ui/Dialog.tsx";
 
 // Enhanced type for better type safety
 interface QualityBenchmarkWithUser extends QualityBenchmark {
@@ -283,10 +291,37 @@ export const QualityBenchmarks: React.FC = () => {
                 <p className="text-sage-600 text-sm mb-4">
                   Create your first quality benchmark to get started
                 </p>
-                <Button onClick={() => setShowCreateForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Benchmark
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Benchmark
+                    </Button>
+                  </DialogTrigger>
+
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add a Benchmark</DialogTitle>
+                      <DialogDescription>
+                        Fill in the details to create a new benchmark.
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Your custom form or content here */}
+                    <div className="space-y-4">
+                      <input
+                        type="text"
+                        placeholder="Benchmark Name"
+                        className="w-full border px-3 py-2 rounded"
+                      />
+                    </div>
+
+                    <DialogFooter className="mt-4">
+                      <Button variant="ghost">Cancel</Button>
+                      <Button>Add</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </>
             )}
           </div>

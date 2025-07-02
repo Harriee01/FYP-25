@@ -10,13 +10,13 @@ import { QualityReports } from "./components/reports/Qualityreports";
 import { AlertsPanel } from "./components/alerts/AlertsPanel";
 import { Analytics } from "./components/analytics/Analytics";
 import { TeamManagement } from "./components/team/TeamManagement";
-import AuditTrailDashBoard from "./components/audit/AuditTrail";
+import ProperAuditWorkflow from "./components/audit/AuditTrail";
 import { Settings } from "./components/settings/Settings";
 import { inter } from "@/styles/fonts";
 import { AppSidebar } from "./components/side-bar/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 // App.tsx
-import '@solana/wallet-adapter-react-ui/styles.css';
+import "@solana/wallet-adapter-react-ui/styles.css";
 
 // Import icons
 import {
@@ -98,7 +98,7 @@ const AuthenticatedApp: React.FC = () => {
       case "team":
         return <TeamManagement />;
       case "audit":
-        return <AuditTrailDashBoard />;
+        return <ProperAuditWorkflow />;
       case "settings":
         return <Settings />;
       case "playground":

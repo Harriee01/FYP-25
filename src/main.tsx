@@ -35,7 +35,16 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Routes>
                 <Route path="/" element={<Suite />} />
                 <Route path="/register" element={<RegisterForm />} />
-                <Route path="/login" element={<LoginForm />} />
+                <Route
+                  path="/login"
+                  element={
+                    <LoginForm
+                      onShowRegister={() => {
+                        /* TODO: implement navigation to register */
+                      }}
+                    />
+                  }
+                />
                 <Route path="/app" element={<App />} />
               </Routes>
             </Router>
