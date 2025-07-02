@@ -1,6 +1,4 @@
-// lib/api.ts - API client for your audit backend
-
-// lib/api.ts - API client for your audit backend
+// lib/api.ts - Updated for real Solana program
 
 const API_BASE_URL = "http://localhost:3000/api";
 
@@ -57,41 +55,100 @@ class AuditAPI {
     return this.request("/status");
   }
 
-  async getSolanaHealth(): Promise<ApiResponse<any>> {
-    return this.request("/solana-health");
-  }
-
-  async getProgramInfo(): Promise<ApiResponse<any>> {
-    return this.request("/program-info");
-  }
-
-  async getWalletInfo(): Promise<ApiResponse<any>> {
-    return this.request("/wallet-test");
-  }
-
-  // User management
-  async verifyUser(walletAddress: string): Promise<ApiResponse<any>> {
-    return this.request("/user/verify", {
+  // Organization Management
+  async registerOrganization(orgData: {
+    name: string;
+    sector: string;
+    address: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/organization/register", {
       method: "POST",
-      body: JSON.stringify({ walletAddress }),
+      body: JSON.stringify(orgData),
     });
   }
 
-  async registerUser(
-    walletAddress: string,
-    role: string
-  ): Promise<ApiResponse<any>> {
-    return this.request("/user/register", {
+  async getAllOrganizations(): Promise<ApiResponse<any>> {
+    return this.request("/organizations");
+  }
+
+  // Stakeholder Management
+  async addStakeholder(stakeholderData: {
+    organizationPDA: string;
+    userPubkey: string;
+    name: string;
+    contactInfo: string;
+    stakeholderType: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/stakeholder/add", {
       method: "POST",
-      body: JSON.stringify({ walletAddress, role }),
+      body: JSON.stringify(stakeholderData),
     });
   }
 
-  async getUserProfile(walletAddress: string): Promise<ApiResponse<any>> {
-    return this.request(`/user/${walletAddress}`);
+  // Quality Standards Management
+  async createQualityStandard(standardData: {
+    name: string;
+    version: string;
+    sector: string;
+    requirements: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/quality-standard/create", {
+      method: "POST",
+      body: JSON.stringify(standardData),
+    });
   }
 
-  // Audit operations
+  async getAllQualityStandards(): Promise<ApiResponse<any>> {
+    return this.request("/quality-standards");
+  }
+
+  // Quality Checks Management
+  async createQualityCheck(checkData: {
+    standardPDA: string;
+    description: string;
+    criteria: string;
+    frequency: string;
+    blockchainRef: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/quality-check/create", {
+      method: "POST",
+      body: JSON.stringify(checkData),
+    });
+  }
+
+  // Real Audit Management
+  async initiateAudit(auditData: {
+    organizationPDA: string;
+    qualityCheckPDA: string;
+    auditType: string;
+    scope: string;
+    expectedCompletion: number;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/audit/initiate", {
+      method: "POST",
+      body: JSON.stringify(auditData),
+    });
+  }
+
+  async completeAudit(completionData: {
+    auditPDA: string;
+    organizationPDA: string;
+    auditId: number;
+    findings: string;
+    complianceScore: number;
+    recommendations: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request("/audit/complete", {
+      method: "POST",
+      body: JSON.stringify(completionData),
+    });
+  }
+
+  async getAllAudits(): Promise<ApiResponse<any>> {
+    return this.request("/audits");
+  }
+
+  // Legacy support for simple audit submission
   async submitAudit(auditData: {
     companyPubkey?: string;
     hash?: number[];
@@ -105,37 +162,18 @@ class AuditAPI {
     });
   }
 
-  async getAudit(auditPubkey: string): Promise<ApiResponse<any>> {
-    return this.request(`/audit/${auditPubkey}`);
-  }
-
-  async getAllAudits(): Promise<ApiResponse<any>> {
-    return this.request("/audits/all");
-  }
-
-  async approveAudit(
-    auditPubkey: string,
-    approverPubkey: string
-  ): Promise<ApiResponse<any>> {
-    return this.request(`/audit/${auditPubkey}/approve`, {
-      method: "POST",
-      body: JSON.stringify({ approverPubkey }),
-    });
-  }
-
   // Utility functions
   async checkConnection(): Promise<boolean> {
     try {
-      console.log("Checking connection to:", this.baseURL); // Debug log
-      const result = await this.getHealth();
-      console.log("Health check result:", result); // Debug log
+      await this.getHealth();
       return true;
     } catch (error) {
       console.error("Backend connection failed:", error);
       return false;
     }
   }
-  // Generate hash from string (simple implementation)
+
+  // Generate hash from string
   generateHash(input: string): number[] {
     const hash = Array.from({ length: 32 }, (_, i) => {
       return (input.charCodeAt(i % input.length) + i) % 256;

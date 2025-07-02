@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Edit, Trash2, Search, Filter, AlertCircle } from "lucide-react";
-import { Card, CardHeader, CardTitle } from "../ui/Card";
+import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { supabase } from "../../supabase.ts";

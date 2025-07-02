@@ -1,7 +1,6 @@
 "use client";
-import { auditAPI } from "@/lib/api"; // Add this import
-import { useState, useEffect } from "react";
 
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -12,7 +11,6 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/label";
-
 import {
   Select,
   SelectContent,
@@ -22,508 +20,560 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  Building2,
   FileText,
-  Users,
-  Clock,
   CheckCircle,
-  Calendar,
-  Eye,
-  Edit,
-  UserPlus,
   AlertCircle,
+  Calendar,
+  Settings,
+  Shield,
+  Clock,
+  Star,
+  TrendingUp,
 } from "lucide-react";
 
+interface Organization {
+  pubkey: string;
+  data: {
+    name: string;
+    sector: string;
+    address: string;
+    authority: string;
+    isActive: boolean;
+    createdAt: number;
+  };
+}
+
+interface QualityStandard {
+  pubkey: string;
+  data: {
+    name: string;
+    version: string;
+    sector: string;
+    requirements: string;
+    createdBy: string;
+    isActive: boolean;
+  };
+}
+
+interface QualityCheck {
+  pubkey: string;
+  data: {
+    standardPDA: string;
+    description: string;
+    criteria: string[];
+    frequency: string;
+    blockchainRef: string;
+    isActive: boolean;
+  };
+}
+
 interface Audit {
-  id: string;
-  title: string;
-  type: string;
-  status: "draft" | "pending" | "approved" | "rejected";
-  submittedBy: string;
-  timestamp: string;
-  version: number;
-  approvalsReceived: number;
-  approvalsRequired: number;
+  pubkey: string;
+  data: {
+    organization: string;
+    qualityCheck: string;
+    auditor: string;
+    auditType: any;
+    scope: string;
+    status: any;
+    auditId: string;
+    initiatedAt: string;
+    expectedCompletion: string;
+    completedAt?: string;
+    findings?: string;
+    complianceScore?: number;
+    recommendations?: string;
+  };
 }
 
-interface CompanyMember {
-  id: string;
-  name: string;
-  role: string;
-  isActive: boolean;
-  addedAt: string;
-  walletAddress?: string;
-}
+// Mock API functions - replace with your actual API
+const auditAPI = {
+  async getAllOrganizations() {
+    const response = await fetch("http://localhost:3000/api/organizations");
+    return response.json();
+  },
 
-interface ScheduledAudit {
-  id: string;
-  name: string;
-  scheduledDate: string;
-  recurrence: string | null;
-  isActive: boolean;
-}
+  async getAllQualityStandards() {
+    const response = await fetch("http://localhost:3000/api/quality-standards");
+    return response.json();
+  },
 
-interface FormErrors {
-  [key: string]: string;
-}
+  async getAllAudits() {
+    const response = await fetch("http://localhost:3000/api/audits");
+    return response.json();
+  },
 
-export default function AuditDashboard() {
-  const [activeTab, setActiveTab] = useState("audits");
+  async registerOrganization(data: {
+    name: string;
+    sector: string;
+    address: string;
+  }) {
+    const response = await fetch(
+      "http://localhost:3000/api/organization/register",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }
+    );
+    return response.json();
+  },
+
+  async createQualityStandard(data: {
+    name: string;
+    version: string;
+    sector: string;
+    requirements: string;
+  }) {
+    const response = await fetch(
+      "http://localhost:3000/api/quality-standard/create",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          requirements: [data.requirements], // Convert to array format
+        }),
+      }
+    );
+    return response.json();
+  },
+
+  async createQualityCheck(data: {
+    standardPDA: string;
+    description: string;
+    criteria: string[];
+    frequency: string;
+    blockchainRef: string;
+  }) {
+    const response = await fetch(
+      "http://localhost:3000/api/quality-check/create",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }
+    );
+    return response.json();
+  },
+
+  async initiateAudit(data: {
+    organizationPDA: string;
+    qualityCheckPDA: string;
+    auditType: string;
+    scope: string;
+    expectedCompletion: number;
+  }) {
+    const response = await fetch("http://localhost:3000/api/audit/initiate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  async completeAudit(data: {
+    auditPDA: string;
+    organizationPDA: string;
+    qualityCheckPDA: string;
+    auditId: number;
+    findings: string[];
+    complianceScore: number;
+    recommendations: string[];
+  }) {
+    const response = await fetch("http://localhost:3000/api/audit/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+};
+
+export default function ProperAuditWorkflow() {
+  const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [audits, setAudits] = useState<Audit[]>([
-    {
-      id: "1",
-      title: "Q4 Security Audit",
-      type: "Security",
-      status: "pending",
-      submittedBy: "John Doe",
-      timestamp: "2024-01-15T10:30:00Z",
-      version: 1,
-      approvalsReceived: 1,
-      approvalsRequired: 2,
-    },
-    {
-      id: "2",
-      title: "Process Compliance Review",
-      type: "Compliance",
-      status: "approved",
-      submittedBy: "Jane Smith",
-      timestamp: "2024-01-14T14:20:00Z",
-      version: 2,
-      approvalsReceived: 2,
-      approvalsRequired: 2,
-    },
-  ]);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [members, setMembers] = useState<CompanyMember[]>([
-    {
-      id: "1",
-      name: "John Doe",
-      role: "QA Manager",
-      isActive: true,
-      addedAt: "2024-01-01T00:00:00Z",
-      walletAddress: "0x1234567890123456789012345678901234567890",
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      role: "Auditor",
-      isActive: true,
-      addedAt: "2024-01-02T00:00:00Z",
-      walletAddress: "0x0987654321098765432109876543210987654321",
-    },
-  ]);
+  // Data states
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [qualityStandards, setQualityStandards] = useState<QualityStandard[]>(
+    []
+  );
+  const [qualityChecks, setQualityChecks] = useState<QualityCheck[]>([]);
+  const [audits, setAudits] = useState<Audit[]>([]);
 
-  const [scheduledAudits, setScheduledAudits] = useState<ScheduledAudit[]>([
-    {
-      id: "1",
-      name: "Monthly Security Review",
-      scheduledDate: "2024-02-01T09:00:00Z",
-      recurrence: "Monthly",
-      isActive: true,
-    },
-  ]);
-
-  const [newAudit, setNewAudit] = useState({
-    title: "",
-    type: "",
-    metadata: "",
-    requiresApproval: false,
-  });
-
-  const [newMember, setNewMember] = useState({
+  // Form states
+  const [orgForm, setOrgForm] = useState({
     name: "",
-    role: "Viewer",
-    walletAddress: "",
+    sector: "",
+    address: "",
   });
 
-  const [newSchedule, setNewSchedule] = useState({
+  const [standardForm, setStandardForm] = useState({
     name: "",
-    scheduledDate: "",
-    recurrence: "",
+    version: "",
+    sector: "",
+    requirements: "",
   });
 
-  const [auditErrors, setAuditErrors] = useState<FormErrors>({});
-  const [memberErrors, setMemberErrors] = useState<FormErrors>({});
-  const [scheduleErrors, setScheduleErrors] = useState<FormErrors>({});
-  const [backendConnected, setBackendConnected] = useState(false);
-  const [backendError, setBackendError] = useState<string>("");
-  const [systemInfo, setSystemInfo] = useState<any>(null);
+  const [checkForm, setCheckForm] = useState({
+    standardPDA: "",
+    description: "",
+    criteria: "",
+    frequency: "Monthly",
+    blockchainRef: "",
+  });
+
+  const [auditForm, setAuditForm] = useState({
+    selectedOrg: "",
+    selectedCheck: "",
+    auditType: "",
+    scope: "",
+    expectedDays: 30,
+  });
+
+  const [completeForm, setCompleteForm] = useState({
+    auditPDA: "",
+    findings: "",
+    complianceScore: 85,
+    recommendations: "",
+  });
+
+  // Initialize
   useEffect(() => {
-    checkBackendConnection();
-    loadSystemInfo();
+    loadData();
   }, []);
-  // Validation functions
-  const validateWalletAddress = (address: string): boolean => {
-    const walletRegex = /^0x[a-fA-F0-9]{40}$/;
-    return walletRegex.test(address);
+
+  const showMessage = (message: string, isError = false) => {
+    if (isError) {
+      setErrorMessage(message);
+      setSuccessMessage("");
+    } else {
+      setSuccessMessage(message);
+      setErrorMessage("");
+    }
+    setTimeout(() => {
+      setSuccessMessage("");
+      setErrorMessage("");
+    }, 5000);
   };
 
-  const validateFutureDate = (dateString: string): boolean => {
-    const selectedDate = new Date(dateString);
-    const now = new Date();
-    return selectedDate > now;
-  };
+  const loadData = async () => {
+    try {
+      const [orgsResult, standardsResult, auditsResult] = await Promise.all([
+        auditAPI.getAllOrganizations(),
+        auditAPI.getAllQualityStandards(),
+        auditAPI.getAllAudits(),
+      ]);
 
-  const generateUniqueId = (): string => {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  };
-
-  const showSuccessMessage = (message: string) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(""), 3000);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+      setOrganizations(orgsResult.organizations || []);
+      setQualityStandards(standardsResult.standards || []);
+      setAudits(auditsResult.audits || []);
+    } catch (error) {
+      console.error("Failed to load data:", error);
+      showMessage("Failed to load data from backend", true);
     }
   };
 
-  const validateAuditForm = (): boolean => {
-    const errors: FormErrors = {};
-
-    if (!newAudit.title.trim()) {
-      errors.title = "Audit title is required";
-    }
-
-    if (!newAudit.type) {
-      errors.type = "Audit type is required";
-    }
-
-    if (!newAudit.metadata.trim()) {
-      errors.metadata = "Audit metadata is required";
-    }
-
-    // Check for duplicate titles
-    const duplicateTitle = audits.some(
-      (audit) =>
-        audit.title.toLowerCase() === newAudit.title.toLowerCase().trim()
-    );
-    if (duplicateTitle) {
-      errors.title = "An audit with this title already exists";
-    }
-
-    setAuditErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const validateMemberForm = (): boolean => {
-    const errors: FormErrors = {};
-
-    if (!newMember.name.trim()) {
-      errors.name = "Member name is required";
-    }
-
-    if (!newMember.walletAddress.trim()) {
-      errors.walletAddress = "Wallet address is required";
-    } else if (!validateWalletAddress(newMember.walletAddress)) {
-      errors.walletAddress = "Invalid wallet address format";
-    }
-
-    // Check for duplicate names
-    const duplicateName = members.some(
-      (member) =>
-        member.name.toLowerCase() === newMember.name.toLowerCase().trim()
-    );
-    if (duplicateName) {
-      errors.name = "A member with this name already exists";
-    }
-
-    // Check for duplicate wallet addresses
-    const duplicateWallet = members.some(
-      (member) => member.walletAddress === newMember.walletAddress.trim()
-    );
-    if (duplicateWallet) {
-      errors.walletAddress = "This wallet address is already registered";
-    }
-
-    setMemberErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const validateScheduleForm = (): boolean => {
-    const errors: FormErrors = {};
-
-    if (!newSchedule.name.trim()) {
-      errors.name = "Audit name is required";
-    }
-
-    if (!newSchedule.scheduledDate) {
-      errors.scheduledDate = "Scheduled date is required";
-    } else if (!validateFutureDate(newSchedule.scheduledDate)) {
-      errors.scheduledDate = "Scheduled date must be in the future";
-    }
-
-    // Check for duplicate schedule names
-    const duplicateName = scheduledAudits.some(
-      (schedule) =>
-        schedule.name.toLowerCase() === newSchedule.name.toLowerCase().trim()
-    );
-    if (duplicateName) {
-      errors.name = "A scheduled audit with this name already exists";
-    }
-
-    setScheduleErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Replace your existing handleSubmitAudit function with this:
-  const handleSubmitAudit = async () => {
-    if (!validateAuditForm()) return;
-    if (!backendConnected) {
-      setBackendError("Backend API is not connected. Cannot submit audit.");
+  // Register Organization
+  const handleRegisterOrganization = async () => {
+    if (!orgForm.name || !orgForm.sector || !orgForm.address) {
+      showMessage("Please fill in all organization fields", true);
       return;
     }
 
     setIsLoading(true);
     try {
-      // Prepare audit data for backend
-      const auditData = {
-        companyPubkey: "11111111111111111111111111111111", // Default company
-        hash: auditAPI.generateHash(newAudit.title + newAudit.metadata),
-        metadata: JSON.stringify({
-          title: newAudit.title.trim(),
-          type: newAudit.type,
-          description: newAudit.metadata.trim(),
-          submittedAt: new Date().toISOString(),
-        }),
-        auditType: { internal: {} },
-        requiresApproval: newAudit.requiresApproval,
-      };
+      const result = await auditAPI.registerOrganization(orgForm);
 
-      // Call your actual backend API
-      const result = (await auditAPI.submitAudit(auditData)) as any;
-
-      // If successful, create local audit object for UI
-      const audit: Audit = {
-        id: result.auditPubkey || generateUniqueId(),
-        title: newAudit.title.trim(),
-        type: newAudit.type,
-        status: newAudit.requiresApproval ? "pending" : "approved",
-        submittedBy: "Current User",
-        timestamp: new Date().toISOString(),
-        version: 1,
-        approvalsReceived: newAudit.requiresApproval ? 0 : 1,
-        approvalsRequired: newAudit.requiresApproval ? 2 : 1,
-      };
-
-      setAudits([audit, ...audits]);
-      setNewAudit({
-        title: "",
-        type: "",
-        metadata: "",
-        requiresApproval: false,
-      });
-      setAuditErrors({});
-
-      const txId = result.transactionId
-        ? result.transactionId.slice(0, 8) + "..."
-        : "No TX";
-      showSuccessMessage(`Audit submitted successfully! Transaction: ${txId}`);
-    } catch (error) {
-      console.error("Error submitting audit:", error);
-      setBackendError(
-        `Failed to submit audit: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAddMember = async () => {
-    if (!validateMemberForm()) return;
-
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const member: CompanyMember = {
-        id: generateUniqueId(),
-        name: newMember.name.trim(),
-        role: newMember.role,
-        isActive: true,
-        addedAt: new Date().toISOString(),
-        walletAddress: newMember.walletAddress.trim(),
-      };
-
-      setMembers([...members, member]);
-      setNewMember({ name: "", role: "Viewer", walletAddress: "" });
-      setMemberErrors({});
-      showSuccessMessage("Team member added successfully!");
-    } catch (error) {
-      console.error("Error adding member:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleScheduleAudit = async () => {
-    if (!validateScheduleForm()) return;
-
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const schedule: ScheduledAudit = {
-        id: generateUniqueId(),
-        name: newSchedule.name.trim(),
-        scheduledDate: newSchedule.scheduledDate,
-        recurrence: newSchedule.recurrence || null,
-        isActive: true,
-      };
-
-      setScheduledAudits([...scheduledAudits, schedule]);
-      setNewSchedule({ name: "", scheduledDate: "", recurrence: "" });
-      setScheduleErrors({});
-      showSuccessMessage("Audit scheduled successfully!");
-    } catch (error) {
-      console.error("Error scheduling audit:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleApproveAudit = async (auditId: string) => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setAudits(
-        audits.map((audit) =>
-          audit.id === auditId
-            ? {
-                ...audit,
-                approvalsReceived: audit.approvalsReceived + 1,
-                status:
-                  audit.approvalsReceived + 1 >= audit.approvalsRequired
-                    ? "approved"
-                    : "pending",
-              }
-            : audit
-        )
-      );
-      showSuccessMessage("Audit approved successfully!");
-    } catch (error) {
-      console.error("Error approving audit:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleToggleMemberStatus = async (memberId: string) => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setMembers(
-        members.map((member) =>
-          member.id === memberId
-            ? { ...member, isActive: !member.isActive }
-            : member
-        )
-      );
-      showSuccessMessage("Member status updated successfully!");
-    } catch (error) {
-      console.error("Error updating member status:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const checkBackendConnection = async () => {
-    try {
-      const isConnected = await auditAPI.checkConnection();
-      setBackendConnected(isConnected);
-
-      if (!isConnected) {
-        setBackendError(
-          "Backend API is not running. Please start your Express server."
+      if (result.success) {
+        showMessage(
+          `Organization registered! PDA: ${result.organizationPDA.slice(
+            0,
+            8
+          )}...`
         );
+        setOrgForm({ name: "", sector: "", address: "" });
+        await loadData();
       } else {
-        setBackendError("");
-        showSuccessMessage("Backend connection test successful!"); // Add this line
+        showMessage(result.error || "Failed to register organization", true);
       }
     } catch (error) {
-      setBackendConnected(false);
-      setBackendError("Failed to connect to backend API");
+      showMessage(
+        `Failed to register organization: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        true
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const loadSystemInfo = async () => {
-    try {
-      const health = await auditAPI.getSolanaHealth();
-      const status = await auditAPI.getStatus();
-      const programInfo = await auditAPI.getProgramInfo();
+  // Create Quality Standard
+  const handleCreateStandard = async () => {
+    if (
+      !standardForm.name ||
+      !standardForm.version ||
+      !standardForm.sector ||
+      !standardForm.requirements
+    ) {
+      showMessage("Please fill in all quality standard fields", true);
+      return;
+    }
 
-      setSystemInfo({
-        health,
-        status,
-        programInfo,
+    setIsLoading(true);
+    try {
+      const result = await auditAPI.createQualityStandard(standardForm);
+
+      if (result.success) {
+        showMessage(
+          `Quality standard created! PDA: ${result.standardPDA.slice(0, 8)}...`
+        );
+        setStandardForm({
+          name: "",
+          version: "",
+          sector: "",
+          requirements: "",
+        });
+        await loadData();
+      } else {
+        showMessage(result.error || "Failed to create quality standard", true);
+      }
+    } catch (error) {
+      showMessage(
+        `Failed to create quality standard: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        true
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Create Quality Check
+  const handleCreateQualityCheck = async () => {
+    if (
+      !checkForm.standardPDA ||
+      !checkForm.description ||
+      !checkForm.criteria ||
+      !checkForm.blockchainRef
+    ) {
+      showMessage("Please fill in all quality check fields", true);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const criteriaArray = checkForm.criteria
+        .split(",")
+        .map((c) => c.trim())
+        .filter((c) => c.length > 0);
+      const result = await auditAPI.createQualityCheck({
+        ...checkForm,
+        criteria: criteriaArray,
+        blockchainRef: checkForm.blockchainRef || `ref_${Date.now()}`,
       });
-    } catch (error) {
-      console.error("Failed to load system info:", error);
-    }
-  };
-  const loadAuditsFromBlockchain = async () => {
-    if (!backendConnected) return;
 
-    try {
-      const result = (await auditAPI.getAllAudits()) as any;
-
-      if (result.audits && result.audits.length > 0) {
-        // Convert blockchain audits to your UI format
-        const blockchainAudits = result.audits.map(
-          (audit: any, index: number) => ({
-            id: audit.pubkey,
-            title: `Blockchain Audit #${index + 1}`,
-            type: "Blockchain",
-            status: "approved" as const,
-            submittedBy: "Blockchain User",
-            timestamp: new Date().toISOString(),
-            version: 1,
-            approvalsReceived: 1,
-            approvalsRequired: 1,
-          })
+      if (result.success) {
+        showMessage(
+          `Quality check created! PDA: ${result.checkPDA.slice(0, 8)}...`
         );
-
-        // Merge with existing audits
-        setAudits([...blockchainAudits, ...audits]);
-        showSuccessMessage(
-          `Loaded ${blockchainAudits.length} audits from blockchain!`
-        );
+        setCheckForm({
+          standardPDA: "",
+          description: "",
+          criteria: "",
+          frequency: "Monthly",
+          blockchainRef: "",
+        });
+        await loadData();
+      } else {
+        showMessage(result.error || "Failed to create quality check", true);
       }
     } catch (error) {
-      console.error("Failed to load blockchain audits:", error);
+      showMessage(
+        `Failed to create quality check: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        true
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // Initiate Audit
+  const handleInitiateAudit = async () => {
+    if (
+      !auditForm.selectedOrg ||
+      !auditForm.selectedCheck ||
+      !auditForm.auditType ||
+      !auditForm.scope
+    ) {
+      showMessage("Please fill in all audit fields", true);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const expectedCompletion =
+        Math.floor(Date.now() / 1000) + auditForm.expectedDays * 24 * 60 * 60;
+
+      const result = await auditAPI.initiateAudit({
+        organizationPDA: auditForm.selectedOrg,
+        qualityCheckPDA: auditForm.selectedCheck,
+        auditType: auditForm.auditType,
+        scope: auditForm.scope,
+        expectedCompletion: expectedCompletion,
+      });
+
+      if (result.success) {
+        showMessage(
+          `Audit initiated! Audit ID: ${
+            result.auditId
+          }, PDA: ${result.auditPDA.slice(0, 8)}...`
+        );
+        setAuditForm({
+          selectedOrg: "",
+          selectedCheck: "",
+          auditType: "",
+          scope: "",
+          expectedDays: 30,
+        });
+        await loadData();
+      } else {
+        showMessage(result.error || "Failed to initiate audit", true);
+      }
+    } catch (error) {
+      showMessage(
+        `Failed to initiate audit: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        true
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Complete Audit
+  const handleCompleteAudit = async () => {
+    if (
+      !completeForm.auditPDA ||
+      !completeForm.findings ||
+      !completeForm.recommendations
+    ) {
+      showMessage("Please fill in all completion fields", true);
+      return;
+    }
+
+    const selectedAudit = audits.find(
+      (a) => a.pubkey === completeForm.auditPDA
+    );
+    if (!selectedAudit) {
+      showMessage("Selected audit not found", true);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const findingsArray = completeForm.findings
+        .split(",")
+        .map((f) => f.trim())
+        .filter((f) => f.length > 0);
+      const recommendationsArray = completeForm.recommendations
+        .split(",")
+        .map((r) => r.trim())
+        .filter((r) => r.length > 0);
+
+      const result = await auditAPI.completeAudit({
+        auditPDA: completeForm.auditPDA,
+        organizationPDA: selectedAudit.data.organization,
+        qualityCheckPDA: selectedAudit.data.qualityCheck,
+        auditId: parseInt(selectedAudit.data.auditId) || Date.now(),
+        findings: findingsArray,
+        complianceScore: completeForm.complianceScore,
+        recommendations: recommendationsArray,
+      });
+
+      if (result.success) {
+        showMessage(
+          `Audit completed successfully! Transaction: ${result.transactionId.slice(
+            0,
+            8
+          )}...`
+        );
+        setCompleteForm({
+          auditPDA: "",
+          findings: "",
+          complianceScore: 85,
+          recommendations: "",
+        });
+        await loadData();
+      } else {
+        showMessage(result.error || "Failed to complete audit", true);
+      }
+    } catch (error) {
+      showMessage(
+        `Failed to complete audit: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        true
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: any) => {
+    if (status?.completed)
+      return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+    if (status?.initiated)
+      return <Badge className="bg-blue-100 text-blue-800">In Progress</Badge>;
+    if (status?.inProgress)
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>
+      );
+    return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>;
+  };
+
+  const getAuditTypeIcon = (auditType: any) => {
+    if (auditType?.security) return <Shield className="w-4 h-4" />;
+    if (auditType?.compliance) return <CheckCircle className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
+  };
+
+  const calculateAverageCompliance = () => {
+    const completedAudits = audits.filter((a) => a.data.complianceScore);
+    if (completedAudits.length === 0) return 0;
+    return Math.round(
+      completedAudits.reduce(
+        (sum, audit) => sum + (audit.data.complianceScore || 0),
+        0
+      ) / completedAudits.length
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            QA Blockchain Dashboard
+            Solana Audit System - Complete Workflow
           </h1>
-          <p className="text-gray-600">Phase 2: Enhanced Workflow Management</p>
+          <p className="text-gray-600">
+            Complete blockchain-based audit management with full functionality
+          </p>
         </div>
 
-        {/* Success Message */}
+        {/* Messages */}
         {successMessage && (
           <Alert className="mb-6 bg-green-50 border-green-200">
             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -533,12 +583,53 @@ export default function AuditDashboard() {
           </Alert>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {errorMessage && (
+          <Alert className="mb-6 bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {errorMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <FileText className="h-8 w-8 text-blue-600" />
+                <Building2 className="h-8 w-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    Organizations
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {organizations.length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Star className="h-8 w-8 text-yellow-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    Quality Standards
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {qualityStandards.length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <FileText className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
                     Total Audits
@@ -550,108 +641,17 @@ export default function AuditDashboard() {
               </div>
             </CardContent>
           </Card>
-          {/* Backend Status - Add this after your Stats Cards */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Backend API Status
-                {backendConnected ? (
-                  <Badge className="bg-green-100 text-green-800">
-                    Connected
-                  </Badge>
-                ) : (
-                  <Badge className="bg-red-100 text-red-800">
-                    Disconnected
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {backendError ? (
-                <Alert className="mb-4 bg-red-50 border-red-200">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">
-                    {backendError}
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="text-sm text-gray-600">
-                  <p>✅ Connected to Express backend API</p>
-                  <p>✅ Solana devnet connection active</p>
-                  {systemInfo && (
-                    <div className="mt-2 space-y-1">
-                      <p>
-                        🔧 Program ID:{" "}
-                        {systemInfo.programInfo?.programId?.slice(0, 8)}...
-                      </p>
-                      <p>
-                        💰 Wallet: {systemInfo.status?.wallet?.slice(0, 8)}...
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="flex gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={checkBackendConnection}
-                  disabled={isLoading}
-                >
-                  Test Connection
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadAuditsFromBlockchain}
-                  disabled={isLoading || !backendConnected}
-                >
-                  Load Blockchain Audits
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
 
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Clock className="h-8 w-8 text-yellow-600" />
+                <TrendingUp className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    Pending Approval
+                    Avg Compliance
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {audits.filter((a) => a.status === "pending").length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
-                    Team Members
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {members.filter((m) => m.isActive).length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Scheduled</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {scheduledAudits.filter((s) => s.isActive).length}
+                    {calculateAverageCompliance()}%
                   </p>
                 </div>
               </div>
@@ -665,565 +665,760 @@ export default function AuditDashboard() {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="setup">Organizations</TabsTrigger>
+            <TabsTrigger value="standards">Standards</TabsTrigger>
+            <TabsTrigger value="checks">Quality Checks</TabsTrigger>
             <TabsTrigger value="audits">Audits</TabsTrigger>
-            <TabsTrigger value="members">Team Members</TabsTrigger>
-            <TabsTrigger value="schedule">Scheduled Audits</TabsTrigger>
-            <TabsTrigger value="submit">Submit New Audit</TabsTrigger>
+            <TabsTrigger value="complete">Complete</TabsTrigger>
           </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Audits */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Audits</CardTitle>
+                  <CardDescription>Latest audit activities</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {audits.slice(0, 5).map((audit, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center space-x-3">
+                          {getAuditTypeIcon(audit.data.auditType)}
+                          <div>
+                            <p className="font-medium">{audit.data.scope}</p>
+                            <p className="text-sm text-gray-600">
+                              Score: {audit.data.complianceScore || "Pending"}
+                            </p>
+                          </div>
+                        </div>
+                        {getStatusBadge(audit.data.status)}
+                      </div>
+                    ))}
+                    {audits.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">
+                        No audits yet. Start by creating your first audit!
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Organizations List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Organizations</CardTitle>
+                  <CardDescription>Registered organizations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {organizations.slice(0, 5).map((org, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{org.data.name}</p>
+                          <p className="text-sm text-gray-600">
+                            {org.data.sector}
+                          </p>
+                        </div>
+                        <Badge
+                          className={
+                            org.data.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }
+                        >
+                          {org.data.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                    ))}
+                    {organizations.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">
+                        No organizations yet. Register your first organization!
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Setup Tab - Organizations */}
+          <TabsContent value="setup" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 1: Register Organization</CardTitle>
+                <CardDescription>
+                  Register your organization on the blockchain
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor="orgName">Organization Name</Label>
+                    <Input
+                      id="orgName"
+                      value={orgForm.name}
+                      onChange={(e) =>
+                        setOrgForm({ ...orgForm, name: e.target.value })
+                      }
+                      placeholder="Acme Corporation"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="orgSector">Sector</Label>
+                    <Input
+                      id="orgSector"
+                      value={orgForm.sector}
+                      onChange={(e) =>
+                        setOrgForm({ ...orgForm, sector: e.target.value })
+                      }
+                      placeholder="Technology"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="orgAddress">Address</Label>
+                    <Input
+                      id="orgAddress"
+                      value={orgForm.address}
+                      onChange={(e) =>
+                        setOrgForm({ ...orgForm, address: e.target.value })
+                      }
+                      placeholder="123 Main St, City, Country"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleRegisterOrganization}
+                  disabled={isLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isLoading ? "Registering..." : "Register Organization"}
+                </Button>
+
+                {/* Existing Organizations */}
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-2">
+                    Registered Organizations ({organizations.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {organizations.map((org) => (
+                      <div key={org.pubkey} className="border p-3 rounded">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{org.data.name}</p>
+                            <p className="text-sm text-gray-600">
+                              {org.data.sector} • {org.data.address}
+                            </p>
+                            <p className="text-xs text-gray-500 font-mono">
+                              {org.pubkey.slice(0, 8)}...{org.pubkey.slice(-8)}
+                            </p>
+                          </div>
+                          <Badge className="bg-green-100 text-green-800">
+                            Active
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Quality Standards Tab */}
+          <TabsContent value="standards" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 2: Create Quality Standards</CardTitle>
+                <CardDescription>
+                  Define quality standards for your audits
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor="standardName">Standard Name</Label>
+                    <Input
+                      id="standardName"
+                      value={standardForm.name}
+                      onChange={(e) =>
+                        setStandardForm({
+                          ...standardForm,
+                          name: e.target.value,
+                        })
+                      }
+                      placeholder="ISO 9001 Quality Management"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="standardVersion">Version</Label>
+                    <Input
+                      id="standardVersion"
+                      value={standardForm.version}
+                      onChange={(e) =>
+                        setStandardForm({
+                          ...standardForm,
+                          version: e.target.value,
+                        })
+                      }
+                      placeholder="1.0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="standardSector">Sector</Label>
+                    <Input
+                      id="standardSector"
+                      value={standardForm.sector}
+                      onChange={(e) =>
+                        setStandardForm({
+                          ...standardForm,
+                          sector: e.target.value,
+                        })
+                      }
+                      placeholder="Technology"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="standardRequirements">Requirements</Label>
+                    <textarea
+                      id="standardRequirements"
+                      value={standardForm.requirements}
+                      onChange={(e) =>
+                        setStandardForm({
+                          ...standardForm,
+                          requirements: e.target.value,
+                        })
+                      }
+                      placeholder="Detailed quality requirements..."
+                      className="w-full px-3 py-2 border rounded-md h-20"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleCreateStandard}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isLoading ? "Creating..." : "Create Quality Standard"}
+                </Button>
+
+                {/* Existing Standards */}
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-2">
+                    Quality Standards ({qualityStandards.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {qualityStandards.map((standard) => (
+                      <div key={standard.pubkey} className="border p-3 rounded">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">
+                              {standard.data.name} v{standard.data.version}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {standard.data.sector}
+                            </p>
+                            <p className="text-xs text-gray-500 font-mono">
+                              {standard.pubkey.slice(0, 8)}...
+                              {standard.pubkey.slice(-8)}
+                            </p>
+                          </div>
+                          <Badge className="bg-blue-100 text-blue-800">
+                            Active
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Quality Checks Tab */}
+          <TabsContent value="checks" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 3: Create Quality Checks</CardTitle>
+                <CardDescription>
+                  Create specific quality checks based on standards
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor="checkStandard">
+                      Select Quality Standard
+                    </Label>
+                    <Select
+                      value={checkForm.standardPDA}
+                      onValueChange={(value) =>
+                        setCheckForm({ ...checkForm, standardPDA: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose standard" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {qualityStandards.map((standard) => (
+                          <SelectItem
+                            key={standard.pubkey}
+                            value={standard.pubkey}
+                          >
+                            {standard.data.name} v{standard.data.version}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="checkDescription">Description</Label>
+                    <Input
+                      id="checkDescription"
+                      value={checkForm.description}
+                      onChange={(e) =>
+                        setCheckForm({
+                          ...checkForm,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Security compliance check"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="checkCriteria">
+                      Criteria (comma-separated)
+                    </Label>
+                    <Input
+                      id="checkCriteria"
+                      value={checkForm.criteria}
+                      onChange={(e) =>
+                        setCheckForm({ ...checkForm, criteria: e.target.value })
+                      }
+                      placeholder="Security protocols, Access controls, Data encryption"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="checkFrequency">Frequency</Label>
+                    <Select
+                      value={checkForm.frequency}
+                      onValueChange={(value) =>
+                        setCheckForm({ ...checkForm, frequency: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Weekly">Weekly</SelectItem>
+                        <SelectItem value="Monthly">Monthly</SelectItem>
+                        <SelectItem value="Quarterly">Quarterly</SelectItem>
+                        <SelectItem value="Annually">Annually</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="checkRef">Blockchain Reference</Label>
+                    <Input
+                      id="checkRef"
+                      value={checkForm.blockchainRef}
+                      onChange={(e) =>
+                        setCheckForm({
+                          ...checkForm,
+                          blockchainRef: e.target.value,
+                        })
+                      }
+                      placeholder="ref_001 (optional - auto-generated if empty)"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleCreateQualityCheck}
+                  disabled={isLoading || qualityStandards.length === 0}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {isLoading ? "Creating..." : "Create Quality Check"}
+                </Button>
+
+                {qualityStandards.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    You need at least one quality standard to create quality
+                    checks.
+                  </p>
+                )}
+
+                {/* Show quality checks would be displayed here if we had an API endpoint for them */}
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-2">Quality Checks</h4>
+                  <p className="text-sm text-gray-500">
+                    Quality checks are created and stored on the blockchain. Use
+                    the created checks in the Audits tab.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Audits Tab */}
           <TabsContent value="audits" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Audit Management</CardTitle>
+                <CardTitle>Step 4: Initiate Audit</CardTitle>
                 <CardDescription>
-                  View and manage all audit submissions with multi-signature
-                  approval workflow
+                  Start a new audit using organizations and quality checks
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {audits.map((audit) => (
-                    <div
-                      key={audit.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold">{audit.title}</h3>
-                          <Badge className={getStatusColor(audit.status)}>
-                            {audit.status.toUpperCase()}
-                          </Badge>
-                          <Badge variant="outline">{audit.type}</Badge>
-                          <span className="text-sm text-gray-500">
-                            v{audit.version}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>By: {audit.submittedBy}</span>
-                          <span>
-                            {new Date(audit.timestamp).toLocaleDateString()}
-                          </span>
-                          <span>
-                            Approvals: {audit.approvalsReceived}/
-                            {audit.approvalsRequired}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-label={`View ${audit.title}`}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
-                        {audit.status === "pending" && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleApproveAudit(audit.id)}
-                            disabled={isLoading}
-                            className="bg-green-600 hover:bg-green-700"
-                            aria-label={`Approve ${audit.title}`}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            {isLoading ? "Approving..." : "Approve"}
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-label={`Update ${audit.title}`}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Update
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Team Members Tab */}
-          <TabsContent value="members" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>
-                  Manage team members and their roles with blockchain-verified
-                  permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 mb-6">
-                  {members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div>
-                        <h3 className="font-semibold">{member.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                          <Badge variant="outline">{member.role}</Badge>
-                          <span>
-                            Added:{" "}
-                            {new Date(member.addedAt).toLocaleDateString()}
-                          </span>
-                          <Badge
-                            className={
-                              member.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }
-                          >
-                            {member.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                        {member.walletAddress && (
-                          <p className="text-xs text-gray-500 font-mono">
-                            {member.walletAddress.slice(0, 10)}...
-                            {member.walletAddress.slice(-8)}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-label={`Edit ${member.name}'s role`}
-                        >
-                          Edit Role
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleMemberStatus(member.id)}
-                          disabled={isLoading}
-                          aria-label={`${
-                            member.isActive ? "Deactivate" : "Activate"
-                          } ${member.name}`}
-                        >
-                          {member.isActive ? "Deactivate" : "Activate"}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add New Member */}
-                <div className="border-t pt-6">
-                  <h4 className="font-semibold mb-4">Add New Team Member</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="memberName">Name *</Label>
-                      <Input
-                        id="memberName"
-                        value={newMember.name}
-                        onChange={(e) =>
-                          setNewMember({ ...newMember, name: e.target.value })
-                        }
-                        placeholder="Enter member name"
-                        className={memberErrors.name ? "border-red-500" : ""}
-                        aria-describedby={
-                          memberErrors.name ? "memberName-error" : undefined
-                        }
-                      />
-                      {memberErrors.name && (
-                        <p
-                          id="memberName-error"
-                          className="text-sm text-red-600 mt-1 flex items-center"
-                        >
-                          <AlertCircle className="w-4 h-4 mr-1" />
-                          {memberErrors.name}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="memberRole">Role *</Label>
-                      <Select
-                        value={newMember.role}
-                        onValueChange={(value) =>
-                          setNewMember({ ...newMember, role: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="QA Manager">QA Manager</SelectItem>
-                          <SelectItem value="QA Staff">QA Staff</SelectItem>
-                          <SelectItem value="Auditor">Auditor</SelectItem>
-                          <SelectItem value="Viewer">Viewer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="walletAddress">Wallet Address *</Label>
-                      <Input
-                        id="walletAddress"
-                        value={newMember.walletAddress}
-                        onChange={(e) =>
-                          setNewMember({
-                            ...newMember,
-                            walletAddress: e.target.value,
-                          })
-                        }
-                        placeholder="0x..."
-                        className={
-                          memberErrors.walletAddress ? "border-red-500" : ""
-                        }
-                        aria-describedby={
-                          memberErrors.walletAddress
-                            ? "walletAddress-error"
-                            : undefined
-                        }
-                      />
-                      {memberErrors.walletAddress && (
-                        <p
-                          id="walletAddress-error"
-                          className="text-sm text-red-600 mt-1 flex items-center"
-                        >
-                          <AlertCircle className="w-4 h-4 mr-1" />
-                          {memberErrors.walletAddress}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleAddMember}
-                    className="mt-4"
-                    disabled={isLoading}
-                    aria-label="Add new team member"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    {isLoading ? "Adding..." : "Add Member"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Scheduled Audits Tab */}
-          <TabsContent value="schedule" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Scheduled Audits</CardTitle>
-                <CardDescription>
-                  Manage recurring and scheduled audit reminders
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 mb-6">
-                  {scheduledAudits.map((schedule) => (
-                    <div
-                      key={schedule.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div>
-                        <h3 className="font-semibold">{schedule.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span>
-                            Scheduled:{" "}
-                            {new Date(
-                              schedule.scheduledDate
-                            ).toLocaleDateString()}
-                          </span>
-                          {schedule.recurrence && (
-                            <Badge variant="outline">
-                              {schedule.recurrence}
-                            </Badge>
-                          )}
-                          <Badge
-                            className={
-                              schedule.isActive
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-gray-100 text-gray-800"
-                            }
-                          >
-                            {schedule.isActive ? "Active" : "Paused"}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-label={`Edit ${schedule.name}`}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-label={`${
-                            schedule.isActive ? "Pause" : "Resume"
-                          } ${schedule.name}`}
-                        >
-                          {schedule.isActive ? "Pause" : "Resume"}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add New Schedule */}
-                <div className="border-t pt-6">
-                  <h4 className="font-semibold mb-4">Schedule New Audit</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="scheduleName">Audit Name *</Label>
-                      <Input
-                        id="scheduleName"
-                        value={newSchedule.name}
-                        onChange={(e) =>
-                          setNewSchedule({
-                            ...newSchedule,
-                            name: e.target.value,
-                          })
-                        }
-                        placeholder="Enter audit name"
-                        className={scheduleErrors.name ? "border-red-500" : ""}
-                        aria-describedby={
-                          scheduleErrors.name ? "scheduleName-error" : undefined
-                        }
-                      />
-                      {scheduleErrors.name && (
-                        <p
-                          id="scheduleName-error"
-                          className="text-sm text-red-600 mt-1 flex items-center"
-                        >
-                          <AlertCircle className="w-4 h-4 mr-1" />
-                          {scheduleErrors.name}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="scheduleDate">Scheduled Date *</Label>
-                      <Input
-                        id="scheduleDate"
-                        type="datetime-local"
-                        value={newSchedule.scheduledDate}
-                        onChange={(e) =>
-                          setNewSchedule({
-                            ...newSchedule,
-                            scheduledDate: e.target.value,
-                          })
-                        }
-                        className={
-                          scheduleErrors.scheduledDate ? "border-red-500" : ""
-                        }
-                        aria-describedby={
-                          scheduleErrors.scheduledDate
-                            ? "scheduleDate-error"
-                            : undefined
-                        }
-                      />
-                      {scheduleErrors.scheduledDate && (
-                        <p
-                          id="scheduleDate-error"
-                          className="text-sm text-red-600 mt-1 flex items-center"
-                        >
-                          <AlertCircle className="w-4 h-4 mr-1" />
-                          {scheduleErrors.scheduledDate}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="recurrence">Recurrence</Label>
-                      <Select
-                        value={newSchedule.recurrence}
-                        onValueChange={(value) =>
-                          setNewSchedule({ ...newSchedule, recurrence: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select recurrence" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">One-time</SelectItem>
-                          <SelectItem value="Weekly">Weekly</SelectItem>
-                          <SelectItem value="Monthly">Monthly</SelectItem>
-                          <SelectItem value="Quarterly">Quarterly</SelectItem>
-                          <SelectItem value="Annually">Annually</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleScheduleAudit}
-                    className="mt-4"
-                    disabled={isLoading}
-                    aria-label="Schedule new audit"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {isLoading ? "Scheduling..." : "Schedule Audit"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Submit New Audit Tab */}
-          <TabsContent value="submit" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Submit New Audit</CardTitle>
-                <CardDescription>
-                  Submit a new audit with enhanced workflow and approval
-                  management
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <Label htmlFor="auditTitle">Audit Title *</Label>
-                    <Input
-                      id="auditTitle"
-                      value={newAudit.title}
-                      onChange={(e) =>
-                        setNewAudit({ ...newAudit, title: e.target.value })
-                      }
-                      placeholder="Enter audit title"
-                      className={auditErrors.title ? "border-red-500" : ""}
-                      aria-describedby={
-                        auditErrors.title ? "auditTitle-error" : undefined
-                      }
-                    />
-                    {auditErrors.title && (
-                      <p
-                        id="auditTitle-error"
-                        className="text-sm text-red-600 mt-1 flex items-center"
-                      >
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {auditErrors.title}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="auditType">Audit Type *</Label>
+                    <Label htmlFor="auditOrg">Select Organization</Label>
                     <Select
-                      value={newAudit.type}
+                      value={auditForm.selectedOrg}
                       onValueChange={(value) =>
-                        setNewAudit({ ...newAudit, type: value })
+                        setAuditForm({ ...auditForm, selectedOrg: value })
                       }
                     >
-                      <SelectTrigger
-                        className={auditErrors.type ? "border-red-500" : ""}
-                      >
-                        <SelectValue placeholder="Select audit type" />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose organization" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Security">Security Audit</SelectItem>
-                        <SelectItem value="Compliance">
-                          Compliance Review
+                        {organizations.map((org) => (
+                          <SelectItem key={org.pubkey} value={org.pubkey}>
+                            {org.data.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="auditCheck">Quality Check PDA</Label>
+                    <Input
+                      id="auditCheck"
+                      value={auditForm.selectedCheck}
+                      onChange={(e) =>
+                        setAuditForm({
+                          ...auditForm,
+                          selectedCheck: e.target.value,
+                        })
+                      }
+                      placeholder="Paste quality check PDA from previous step"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Use the PDA returned when creating a quality check above
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="auditType">Audit Type</Label>
+                    <Select
+                      value={auditForm.auditType}
+                      onValueChange={(value) =>
+                        setAuditForm({ ...auditForm, auditType: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose audit type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Internal">Internal</SelectItem>
+                        <SelectItem value="External">External</SelectItem>
+                        <SelectItem value="Compliance">Compliance</SelectItem>
+                        <SelectItem value="Security">Security</SelectItem>
+                        <SelectItem value="Process">Process</SelectItem>
+                        <SelectItem value="Financial">Financial</SelectItem>
+                        <SelectItem value="Environmental">
+                          Environmental
                         </SelectItem>
-                        <SelectItem value="Performance">
-                          Performance Assessment
-                        </SelectItem>
-                        <SelectItem value="Quality">
-                          Quality Assurance
-                        </SelectItem>
-                        <SelectItem value="Financial">
-                          Financial Audit
+                        <SelectItem value="SupplyChain">
+                          Supply Chain
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                    {auditErrors.type && (
-                      <p className="text-sm text-red-600 mt-1 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {auditErrors.type}
-                      </p>
-                    )}
                   </div>
-
                   <div>
-                    <Label htmlFor="auditMetadata">Audit Description *</Label>
-                    <textarea
-                      id="auditMetadata"
-                      value={newAudit.metadata}
+                    <Label htmlFor="expectedDays">
+                      Expected Duration (Days)
+                    </Label>
+                    <Input
+                      id="expectedDays"
+                      type="number"
+                      value={auditForm.expectedDays}
                       onChange={(e) =>
-                        setNewAudit({ ...newAudit, metadata: e.target.value })
-                      }
-                      placeholder="Enter detailed description of the audit"
-                      className={`w-full px-3 py-2 border rounded-md resize-none h-24 ${
-                        auditErrors.metadata
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }`}
-                      aria-describedby={
-                        auditErrors.metadata ? "auditMetadata-error" : undefined
-                      }
-                    />
-                    {auditErrors.metadata && (
-                      <p
-                        id="auditMetadata-error"
-                        className="text-sm text-red-600 mt-1 flex items-center"
-                      >
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {auditErrors.metadata}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="requiresApproval"
-                      checked={newAudit.requiresApproval}
-                      onChange={(e) =>
-                        setNewAudit({
-                          ...newAudit,
-                          requiresApproval: e.target.checked,
+                        setAuditForm({
+                          ...auditForm,
+                          expectedDays: parseInt(e.target.value) || 30,
                         })
                       }
-                      className="rounded border-gray-300"
+                      placeholder="30"
                     />
-                    <Label htmlFor="requiresApproval">
-                      Requires multi-signature approval
-                    </Label>
                   </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="auditScope">Audit Scope</Label>
+                    <textarea
+                      id="auditScope"
+                      value={auditForm.scope}
+                      onChange={(e) =>
+                        setAuditForm({ ...auditForm, scope: e.target.value })
+                      }
+                      placeholder="Describe the scope of this audit..."
+                      className="w-full px-3 py-2 border rounded-md h-20"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleInitiateAudit}
+                  disabled={isLoading || organizations.length === 0}
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {isLoading ? "Initiating..." : "Initiate Audit"}
+                </Button>
 
-                  {/* Backend Connection Status */}
-                  {backendError && (
-                    <Alert className="bg-red-50 border-red-200">
-                      <AlertCircle className="h-4 w-4 text-red-600" />
-                      <AlertDescription className="text-red-800">
-                        {backendError}
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                {organizations.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    You need at least one organization to initiate an audit.
+                  </p>
+                )}
 
-                  {/* Submit Button */}
-                  <div className="pt-4 border-t">
-                    <Button
-                      onClick={handleSubmitAudit}
-                      disabled={isLoading || !backendConnected}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                      aria-label="Submit new audit"
-                    >
-                      {isLoading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Submitting to Blockchain...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="w-4 h-4 mr-2" />
-                          Submit Audit to Blockchain
-                        </>
-                      )}
-                    </Button>
-
-                    {!backendConnected && (
-                      <p className="text-sm text-gray-500 mt-2 text-center">
-                        Backend API must be connected to submit audits
+                {/* Current Audits */}
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-2">
+                    Current Audits ({audits.length})
+                  </h4>
+                  <div className="space-y-4">
+                    {audits.length === 0 ? (
+                      <p className="text-gray-500">
+                        No audits found. Create your first audit above.
                       </p>
+                    ) : (
+                      audits.map((audit) => (
+                        <div
+                          key={audit.pubkey}
+                          className="border p-4 rounded-lg"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h3 className="font-semibold">
+                                Audit ID: {audit.data.auditId}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {audit.data.scope}
+                              </p>
+                              <p className="text-xs text-gray-500 font-mono">
+                                {audit.pubkey.slice(0, 8)}...
+                                {audit.pubkey.slice(-8)}
+                              </p>
+                            </div>
+                            {getStatusBadge(audit.data.status)}
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p>
+                                <strong>Type:</strong>{" "}
+                                {Object.keys(audit.data.auditType)[0] ||
+                                  "Unknown"}
+                              </p>
+                              <p>
+                                <strong>Initiated:</strong>{" "}
+                                {new Date(
+                                  parseInt(audit.data.initiatedAt) * 1000
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p>
+                                <strong>Expected:</strong>{" "}
+                                {new Date(
+                                  parseInt(audit.data.expectedCompletion) * 1000
+                                ).toLocaleDateString()}
+                              </p>
+                              {audit.data.complianceScore && (
+                                <p>
+                                  <strong>Score:</strong>{" "}
+                                  {audit.data.complianceScore}/100
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
                     )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Complete Audit Tab */}
+          <TabsContent value="complete" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 5: Complete Audit</CardTitle>
+                <CardDescription>
+                  Complete an initiated audit with findings and recommendations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor="completeAudit">
+                      Select Audit to Complete
+                    </Label>
+                    <Select
+                      value={completeForm.auditPDA}
+                      onValueChange={(value) =>
+                        setCompleteForm({ ...completeForm, auditPDA: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose audit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {audits
+                          .filter((audit) => !audit.data.status?.completed)
+                          .map((audit) => (
+                            <SelectItem key={audit.pubkey} value={audit.pubkey}>
+                              {audit.data.scope} (ID: {audit.data.auditId})
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="complianceScore">
+                      Compliance Score (0-100)
+                    </Label>
+                    <Input
+                      id="complianceScore"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={completeForm.complianceScore}
+                      onChange={(e) =>
+                        setCompleteForm({
+                          ...completeForm,
+                          complianceScore: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="85"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="auditFindings">
+                      Findings (comma-separated)
+                    </Label>
+                    <textarea
+                      id="auditFindings"
+                      value={completeForm.findings}
+                      onChange={(e) =>
+                        setCompleteForm({
+                          ...completeForm,
+                          findings: e.target.value,
+                        })
+                      }
+                      placeholder="Security protocols need updating, Access controls properly configured"
+                      className="w-full px-3 py-2 border rounded-md h-20"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="auditRecommendations">
+                      Recommendations (comma-separated)
+                    </Label>
+                    <textarea
+                      id="auditRecommendations"
+                      value={completeForm.recommendations}
+                      onChange={(e) =>
+                        setCompleteForm({
+                          ...completeForm,
+                          recommendations: e.target.value,
+                        })
+                      }
+                      placeholder="Implement multi-factor authentication, Update encryption standards"
+                      className="w-full px-3 py-2 border rounded-md h-20"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleCompleteAudit}
+                  disabled={
+                    isLoading ||
+                    audits.filter((a) => !a.data.status?.completed).length === 0
+                  }
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isLoading ? "Completing..." : "Complete Audit"}
+                </Button>
+
+                {audits.filter((a) => !a.data.status?.completed).length ===
+                  0 && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    No incomplete audits available to complete.
+                  </p>
+                )}
+
+                {/* Completed Audits */}
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-2">
+                    Completed Audits (
+                    {audits.filter((a) => a.data.status?.completed).length})
+                  </h4>
+                  <div className="space-y-4">
+                    {audits
+                      .filter((a) => a.data.status?.completed)
+                      .map((audit) => (
+                        <div
+                          key={audit.pubkey}
+                          className="border p-4 rounded-lg bg-green-50"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h3 className="font-semibold text-green-800">
+                                ✓ {audit.data.scope}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                ID: {audit.data.auditId}
+                              </p>
+                            </div>
+                            <Badge className="bg-green-100 text-green-800">
+                              Completed
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p>
+                                <strong>Compliance Score:</strong>{" "}
+                                {audit.data.complianceScore}/100
+                              </p>
+                              <p>
+                                <strong>Completed:</strong>{" "}
+                                {audit.data.completedAt
+                                  ? new Date(
+                                      parseInt(audit.data.completedAt) * 1000
+                                    ).toLocaleDateString()
+                                  : "Recently"}
+                              </p>
+                            </div>
+                            <div>
+                              <p>
+                                <strong>Type:</strong>{" "}
+                                {Object.keys(audit.data.auditType)[0] ||
+                                  "Unknown"}
+                              </p>
+                              <p>
+                                <strong>Status:</strong> ✓ Complete
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </CardContent>

@@ -12,6 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
+import { useNavigate } from "react-router-dom";
+
 import { Label } from "@/components/ui/label";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"; // ✅ REQUIRED IMPORT
@@ -36,6 +38,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
 
     try {
       await login(email, password);
+      navigate("/app"); // 👈 redirect after login
     } catch (error) {
       console.error("Login failed:", error);
       setError(
@@ -67,7 +70,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
       if (!response.ok) throw new Error(data.error || "Unauthorized wallet");
 
       // Proceed with wallet-based auth
-      await login(data.user); // Your auth logic should support this
+      await login(data.user, "");
+
+      navigate("/app"); // 👈 redirect after wallet login
+      // Pass a second argument as required by login
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Wallet verification failed"
@@ -76,6 +82,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
       setIsLoading(false);
     }
   };
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
