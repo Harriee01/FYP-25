@@ -67,6 +67,7 @@ export const QualityBenchmarks: React.FC = () => {
           minValue: 18,
           maxValue: 25,
           unit: "°C",
+          organizationId: "org1",
           isActive: true,
           createdAt: new Date("2024-01-15T10:30:00Z"),
           createdBy: "user1",
@@ -80,6 +81,7 @@ export const QualityBenchmarks: React.FC = () => {
           minValue: 100,
           maxValue: 150,
           unit: "PSI",
+          organizationId: "org1",
           isActive: true,
           createdAt: new Date("2024-01-20T14:15:00Z"),
           createdBy: "user2",
@@ -93,6 +95,7 @@ export const QualityBenchmarks: React.FC = () => {
           minValue: 6.5,
           maxValue: 7.5,
           unit: "pH",
+          organizationId: "org1",
           isActive: true,
           createdAt: new Date("2024-02-01T09:45:00Z"),
           createdBy: "user3",
@@ -106,6 +109,7 @@ export const QualityBenchmarks: React.FC = () => {
           minValue: 40,
           maxValue: 60,
           unit: "%",
+          organizationId: "org1",
           isActive: true,
           createdAt: new Date("2024-02-10T16:20:00Z"),
           createdBy: "user4",
@@ -489,7 +493,7 @@ export const QualityBenchmarks: React.FC = () => {
             </div>
 
             {/* Modal Body */}
-            <form className="p-6 space-y-6">
+            <form className="p-6 space-y-6" onSubmit={handleSubmit}>
               {/* Name Field */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-hunter-900 mb-2">
@@ -500,7 +504,12 @@ export const QualityBenchmarks: React.FC = () => {
                   type="text"
                   placeholder="e.g., Temperature Control, Pressure Monitoring"
                   className="w-full"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                 />
+                {formErrors.name && (
+                  <p className="text-red-600 text-xs mt-1">{formErrors.name}</p>
+                )}
               </div>
 
               {/* Description Field */}
@@ -513,7 +522,12 @@ export const QualityBenchmarks: React.FC = () => {
                   placeholder="Provide a detailed description of this benchmark..."
                   rows={3}
                   className="w-full px-3 py-2 border border-sage-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-hunter-500 focus:border-hunter-500 bg-ivory-50 text-hunter-900 resize-none"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
                 />
+                {formErrors.description && (
+                  <p className="text-red-600 text-xs mt-1">{formErrors.description}</p>
+                )}
               </div>
 
               {/* Category Field */}
@@ -526,46 +540,66 @@ export const QualityBenchmarks: React.FC = () => {
                   type="text"
                   placeholder="e.g., Safety, Quality Control, Environmental"
                   className="w-full"
+                  value={formData.category}
+                  onChange={(e) => handleInputChange("category", e.target.value)}
                 />
+                {formErrors.category && (
+                  <p className="text-red-600 text-xs mt-1">{formErrors.category}</p>
+                )}
               </div>
 
-              {/* Value Range Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="minValue" className="block text-sm font-medium text-hunter-900 mb-2">
-                    Minimum Value *
-                  </label>
-                  <Input
-                    id="minValue"
-                    type="number"
-                    placeholder="0"
-                    className="w-full"
-                  />
-                </div>
+              {/* Min Value Field */}
+              <div>
+                <label htmlFor="minValue" className="block text-sm font-medium text-hunter-900 mb-2">
+                  Minimum Value *
+                </label>
+                <Input
+                  id="minValue"
+                  type="number"
+                  placeholder="0"
+                  className="w-full"
+                  value={formData.minValue}
+                  onChange={(e) => handleInputChange("minValue", Number(e.target.value))}
+                />
+                {formErrors.minValue && (
+                  <p className="text-red-600 text-xs mt-1">{formErrors.minValue}</p>
+                )}
+              </div>
 
-                <div>
-                  <label htmlFor="maxValue" className="block text-sm font-medium text-hunter-900 mb-2">
-                    Maximum Value *
-                  </label>
-                  <Input
-                    id="maxValue"
-                    type="number"
-                    placeholder="100"
-                    className="w-full"
-                  />
-                </div>
+              {/* Max Value Field */}
+              <div>
+                <label htmlFor="maxValue" className="block text-sm font-medium text-hunter-900 mb-2">
+                  Maximum Value *
+                </label>
+                <Input
+                  id="maxValue"
+                  type="number"
+                  placeholder="100"
+                  className="w-full"
+                  value={formData.maxValue}
+                  onChange={(e) => handleInputChange("maxValue", Number(e.target.value))}
+                />
+                {formErrors.maxValue && (
+                  <p className="text-red-600 text-xs mt-1">{formErrors.maxValue}</p>
+                )}
+              </div>
 
-                <div>
-                  <label htmlFor="targetValue" className="block text-sm font-medium text-hunter-900 mb-2">
-                    Target Value *
-                  </label>
-                  <Input
-                    id="targetValue"
-                    type="number"
-                    placeholder="50"
-                    className="w-full"
-                  />
-                </div>
+              {/* Target Value Field */}
+              <div>
+                <label htmlFor="targetValue" className="block text-sm font-medium text-hunter-900 mb-2">
+                  Target Value *
+                </label>
+                <Input
+                  id="targetValue"
+                  type="number"
+                  placeholder="50"
+                  className="w-full"
+                  value={formData.targetValue}
+                  onChange={(e) => handleInputChange("targetValue", Number(e.target.value))}
+                />
+                {formErrors.targetValue && (
+                  <p className="text-red-600 text-xs mt-1">{formErrors.targetValue}</p>
+                )}
               </div>
 
               {/* Unit Field */}
@@ -578,7 +612,12 @@ export const QualityBenchmarks: React.FC = () => {
                   type="text"
                   placeholder="e.g., °C, PSI, %, mg/L"
                   className="w-full"
+                  value={formData.unit}
+                  onChange={(e) => handleInputChange("unit", e.target.value)}
                 />
+                {formErrors.unit && (
+                  <p className="text-red-600 text-xs mt-1">{formErrors.unit}</p>
+                )}
               </div>
 
               {/* Modal Footer */}
@@ -593,8 +632,16 @@ export const QualityBenchmarks: React.FC = () => {
                 <Button
                   type="submit"
                   className="bg-hunter-600 hover:bg-hunter-700"
+                  disabled={isSubmitting}
                 >
-                  Create Benchmark
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                      Creating...
+                    </span>
+                  ) : (
+                    "Create Benchmark"
+                  )}
                 </Button>
               </div>
             </form>
