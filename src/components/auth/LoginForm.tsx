@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 
 import { Label } from "@/components/ui/label";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"; // ✅ REQUIRED IMPORT
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 interface LoginFormProps {
   onShowRegister: () => void;
@@ -25,15 +25,16 @@ interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [walletLoading, setWalletLoading] = useState(false);
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const { login, loginWithWallet } = useAuth(); // <- You'll define loginWithWallet
   const { publicKey } = useWallet();
 
   // Handle traditional email/password login
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setEmailLoading(true);
     setError("");
 
     try {
@@ -47,7 +48,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
           : "Login failed. Please try again."
       );
     } finally {
-      setIsLoading(false);
+      setEmailLoading(false);
     }
   };
 
@@ -58,7 +59,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
       return;
     }
 
-    setIsLoading(true);
+    setWalletLoading(true);
+    setError("");
+
     try {
       const response = await fetch("/api/verify-wallet-role", {
         method: "POST",
@@ -66,20 +69,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
         body: JSON.stringify({ walletAddress: publicKey.toString() }),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Unauthorized wallet");
+      }
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unauthorized wallet");
 
-      // Proceed with wallet-based auth
-      await login(data.user, "");
-
-      navigate("/app"); // 👈 redirect after wallet login
-      // Pass a second argument as required by login
+      // Custom login logic for wallet
+      await loginWithWallet(data.user); // <- Make sure this method exists in your AuthContext
     } catch (error) {
+      console.error("Wallet login failed:", error);
       setError(
         error instanceof Error ? error.message : "Wallet verification failed"
       );
     } finally {
-      setIsLoading(false);
+      setWalletLoading(false);
     }
   };
   const navigate = useNavigate();
@@ -115,9 +120,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
               <Button
                 className="w-full mt-2 bg-green-600 hover:bg-green-700"
                 onClick={handleWalletLogin}
-                disabled={isLoading}
+                disabled={walletLoading}
               >
-                {isLoading ? <Spinner /> : "Verify Wallet Role"}
+                {walletLoading ? <Spinner /> : "Verify Wallet Role"}
               </Button>
             )}
           </div>
@@ -142,7 +147,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@company.com"
                 required
-                disabled={isLoading}
+                disabled={emailLoading}
               />
             </div>
 
@@ -163,12 +168,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="password"
                 required
-                disabled={isLoading}
+                disabled={emailLoading}
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
+            <Button type="submit" className="w-full" disabled={emailLoading}>
+              {emailLoading ? (
                 <>
                   <Spinner /> Signing In...
                 </>
@@ -186,7 +191,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
                 Don't have an organization account?{" "}
                 <button
                   onClick={onShowRegister}
-                  disabled={isLoading}
+                  disabled={emailLoading || walletLoading}
                   className="text-green-700 hover:text-green-800 font-medium underline underline-offset-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Register Organization

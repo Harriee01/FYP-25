@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -20,105 +20,16 @@ import {
   PieChart as PieChartIcon,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card";
-import { supabase } from "../../supabase.ts";
+import {
+  complianceData,
+  trendData,
+  categoryData,
+  metrics,
+} from "../data/analyticData";
 
 const COLORS = ["#4a6741", "#4a8b54", "#7f8669", "#f0ede6"];
 
 export const Analytics: React.FC = () => {
-  const [complianceData, setComplianceData] = useState([]);
-  const [trendData, setTrendData] = useState([]);
-  const [categoryData, setCategoryData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, []);
-
-  const fetchAnalyticsData = async () => {
-    try {
-      // Fetch compliance data by month
-      const { data: reports } = await supabase
-        .from("quality_reports")
-        .select(
-          `
-          created_at,
-          status,
-          benchmark:quality_benchmarks(category)
-        `
-        )
-        .order("created_at", { ascending: true });
-
-      if (reports) {
-        // Process compliance data
-        const monthlyCompliance = reports.reduce((acc, report) => {
-          const month = new Date(report.created_at).toLocaleDateString(
-            "en-US",
-            { month: "short", year: "numeric" }
-          );
-          if (!acc[month]) {
-            acc[month] = {
-              month,
-              compliant: 0,
-              warning: 0,
-              non_compliant: 0,
-              total: 0,
-            };
-          }
-          acc[month][report.status]++;
-          acc[month].total++;
-          return acc;
-        }, {});
-
-        const complianceArray = Object.values(monthlyCompliance).map(
-          (item: any) => ({
-            ...item,
-            complianceRate: ((item.compliant / item.total) * 100).toFixed(1),
-          })
-        );
-
-        setComplianceData(complianceArray);
-
-        // Process trend data
-        const trendArray = complianceArray.map((item: any) => ({
-          month: item.month,
-          complianceRate: parseFloat(item.complianceRate),
-        }));
-        setTrendData(trendArray);
-
-        // Process category data
-        const categoryStats = reports.reduce((acc, report) => {
-          const category = report.benchmark?.category || "Unknown";
-          if (!acc[category]) {
-            acc[category] = { name: category, compliant: 0, total: 0 };
-          }
-          if (report.status === "compliant") acc[category].compliant++;
-          acc[category].total++;
-          return acc;
-        }, {});
-
-        const categoryArray = Object.values(categoryStats).map((item: any) => ({
-          name: item.name,
-          value: ((item.compliant / item.total) * 100).toFixed(1),
-          count: item.total,
-        }));
-
-        setCategoryData(categoryArray);
-      }
-    } catch (error) {
-      console.error("Error fetching analytics data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-hunter-700"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -127,17 +38,21 @@ export const Analytics: React.FC = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-ivory-50 border-sage-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-sage-700">
                 Overall Compliance
               </p>
-              <p className="text-2xl font-bold text-hunter-900">94.2%</p>
+              <p className="text-2xl font-bold text-hunter-900">
+                {metricsData.overallCompliance}%
+              </p>
               <div className="flex items-center mt-1">
                 <TrendingUp className="h-4 w-4 text-fern-600 mr-1" />
-                <span className="text-sm text-fern-600">+2.1%</span>
+                <span className="text-sm text-fern-600">
+                  {metricsData.complianceChange}
+                </span>
               </div>
             </div>
             <BarChart3 className="h-8 w-8 text-fern-700" />
@@ -148,10 +63,14 @@ export const Analytics: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-sage-700">Total Reports</p>
-              <p className="text-2xl font-bold text-hunter-900">1,247</p>
+              <p className="text-2xl font-bold text-hunter-900">
+                {metricsData.totalReports.toLocaleString()}
+              </p>
               <div className="flex items-center mt-1">
                 <TrendingUp className="h-4 w-4 text-fern-600 mr-1" />
-                <span className="text-sm text-fern-600">+12%</span>
+                <span className="text-sm text-fern-600">
+                  {metricsData.reportsChange}
+                </span>
               </div>
             </div>
             <BarChart3 className="h-8 w-8 text-hunter-700" />
@@ -164,10 +83,14 @@ export const Analytics: React.FC = () => {
               <p className="text-sm font-medium text-sage-700">
                 Active Benchmarks
               </p>
-              <p className="text-2xl font-bold text-hunter-900">24</p>
+              <p className="text-2xl font-bold text-hunter-900">
+                {metricsData.activeBenchmarks}
+              </p>
               <div className="flex items-center mt-1">
                 <TrendingUp className="h-4 w-4 text-fern-600 mr-1" />
-                <span className="text-sm text-fern-600">+3</span>
+                <span className="text-sm text-fern-600">
+                  {metricsData.benchmarksChange}
+                </span>
               </div>
             </div>
             <PieChartIcon className="h-8 w-8 text-sage-700" />
@@ -180,16 +103,62 @@ export const Analytics: React.FC = () => {
               <p className="text-sm font-medium text-sage-700">
                 Avg Response Time
               </p>
-              <p className="text-2xl font-bold text-hunter-900">2.4h</p>
+              <p className="text-2xl font-bold text-hunter-900">
+                {metricsData.avgResponseTime}h
+              </p>
               <div className="flex items-center mt-1">
                 <TrendingDown className="h-4 w-4 text-fern-600 mr-1" />
-                <span className="text-sm text-fern-600">-0.3h</span>
+                <span className="text-sm text-fern-600">
+                  {metricsData.responseTimeChange}
+                </span>
               </div>
             </div>
             <BarChart3 className="h-8 w-8 text-fern-700" />
           </div>
         </Card>
-      </div>
+      </div> */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
+      {metrics.map((metric, index) => {
+        const Icon = metric.icon
+        const TrendIcon = metric.trend === "up" ? TrendingUp : TrendingDown
+
+        return (
+          <Card
+            key={index}
+            className={`relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br ${metric.bgGradient}`}
+          >
+            {/* Gradient accent bar */}
+            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${metric.gradient}`} />
+
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600 mb-2">{metric.title}</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-3">{metric.value}</p>
+                </div>
+                <div className={`p-3 rounded-xl bg-white/80 backdrop-blur-sm ${metric.iconColor}`}>
+                  <Icon className="h-6 w-6" />
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <div
+                  className={`flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    metric.trend === "up" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-100 text-emerald-700"
+                  }`}
+                >
+                  <TrendIcon className="h-3 w-3 mr-1" />
+                  <span>{metric.change}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Subtle pattern overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
+          </Card>
+        )
+      })}
+    </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Compliance Trend */}
@@ -290,13 +259,13 @@ export const Analytics: React.FC = () => {
                 <Bar
                   dataKey="warning"
                   stackId="a"
-                  fill="#eab308"
+                  fill="#a3a3a3"
                   name="Warning"
                 />
                 <Bar
                   dataKey="non_compliant"
                   stackId="a"
-                  fill="#dc2626"
+                  fill="#fdba74"
                   name="Non-Compliant"
                 />
               </BarChart>

@@ -1,63 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card.tsx";
 import { Button } from "../ui/Button.tsx";
-import { supabase } from "../../supabase.ts";
 import { Alert } from "../../types/index.ts";
 import { format } from "date-fns";
+import { alerts as staticAlerts } from "../data/alertData.ts";
 
 export const AlertsPanel: React.FC = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    fetchAlerts();
-  }, []);
+  // Sort alerts by createdAt descending
+  const sortedAlerts = [...staticAlerts].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
-  const fetchAlerts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("alerts")
-        .select(
-          `
-          *,
-          report:quality_reports(
-            benchmark:quality_benchmarks(name)
-          )
-        `
-        )
-        .order("created_at", { ascending: false });
+  // Most recent 3 alerts
+  const recentAlerts = sortedAlerts.slice(0, 3);
 
-      if (error) throw error;
-      setAlerts(data || []);
-    } catch (error) {
-      console.error("Error fetching alerts:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAsRead = async (alertId: string) => {
-    try {
-      const { error } = await supabase
-        .from("alerts")
-        .update({ is_read: true })
-        .eq("id", alertId);
-
-      if (error) throw error;
-
-      setAlerts(
-        alerts.map((alert) =>
-          alert.id === alertId ? { ...alert, isRead: true } : alert
-        )
-      );
-    } catch (error) {
-      console.error("Error marking alert as read:", error);
-    }
-  };
-
-  const filteredAlerts = alerts.filter((alert) => {
+  // Filtered alerts for the main list (kept for filter dropdown)
+  const filteredAlerts = sortedAlerts.filter((alert) => {
     if (filter === "unread") return !alert.isRead;
     if (filter === "read") return alert.isRead;
     return true;
@@ -92,14 +53,6 @@ export const AlertsPanel: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-hunter-700"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -125,13 +78,13 @@ export const AlertsPanel: React.FC = () => {
       {/* Alert Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {["critical", "high", "medium", "low"].map((severity) => {
-          const count = alerts.filter(
+          const count = staticAlerts.filter(
             (alert) => alert.severity === severity
           ).length;
           return (
             <Card
               key={severity}
-              className={`${getSeverityColor(severity)} border-2`}
+              className={`${getSeverityColor(severity)} border-2 p-6`}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -145,13 +98,13 @@ export const AlertsPanel: React.FC = () => {
         })}
       </div>
 
-      {/* Alerts List */}
+      {/* Recent Alerts */}
       <Card className="bg-ivory-50 border-sage-200">
         <CardHeader>
           <CardTitle className="text-hunter-900">Recent Alerts</CardTitle>
         </CardHeader>
         <div className="space-y-3">
-          {filteredAlerts.map((alert) => (
+          {recentAlerts.map((alert) => (
             <div
               key={alert.id}
               className={`p-4 rounded-lg border transition-all ${
@@ -211,31 +164,87 @@ export const AlertsPanel: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {!alert.isRead && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => markAsRead(alert.id)}
-                    >
-                      Mark as Read
-                    </Button>
-                  )}
-                </div>
               </div>
             </div>
           ))}
         </div>
       </Card>
 
-      {filteredAlerts.length === 0 && (
-        <Card className="bg-ivory-50 border-sage-200 text-center py-12">
-          <CheckCircle className="h-12 w-12 text-fern-600 mx-auto mb-4" />
-          <p className="text-sage-700">
-            No alerts found. Everything looks good!
-          </p>
-        </Card>
-      )}
+      {/* All Alerts */}
+      <Card className="bg-ivory-50 border-sage-200">
+        <CardHeader>
+          <CardTitle className="text-hunter-900">All Alerts</CardTitle>
+        </CardHeader>
+        <div className="space-y-3">
+          {filteredAlerts.length === 0 ? (
+            <div className="text-center text-sage-700 py-8">No alerts found.</div>
+          ) : (
+            filteredAlerts.map((alert) => (
+              <div
+                key={alert.id}
+                className={`p-4 rounded-lg border transition-all ${
+                  alert.isRead
+                    ? "bg-sage-50 border-sage-200"
+                    : "bg-ivory-50 border-sage-300 shadow-sm"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3 flex-1">
+                    <div
+                      className={`p-2 rounded-full ${getSeverityColor(
+                        alert.severity
+                      )}`}
+                    >
+                      {getSeverityIcon(alert.severity)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h4
+                          className={`font-medium ${
+                            alert.isRead ? "text-sage-800" : "text-hunter-900"
+                          }`}
+                        >
+                          {alert.title}
+                        </h4>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(
+                            alert.severity
+                          )}`}
+                        >
+                          {alert.severity}
+                        </span>
+                        {!alert.isRead && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-hunter-100 text-hunter-800">
+                            New
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        className={`text-sm mt-1 ${
+                          alert.isRead ? "text-sage-600" : "text-sage-700"
+                        }`}
+                      >
+                        {alert.message}
+                      </p>
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-sage-600">
+                        <span>
+                          {format(
+                            new Date(alert.createdAt),
+                            "MMM dd, yyyy HH:mm"
+                          )}
+                        </span>
+                        {alert.reportId && (
+                          <span>Related report ID: {alert.reportId}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
     </div>
   );
 };

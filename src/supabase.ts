@@ -1,8 +1,8 @@
 // Add this at the very top to see all environment variables
-console.log("All environment variables:", import.meta.env);
-console.log("NODE_ENV:", import.meta.env.NODE_ENV);
-console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
-console.log("Supabase Key:", import.meta.env.VITE_SUPABASE_ANON_KEY);
+// console.log("All environment variables:", import.meta.env);
+// console.log("NODE_ENV:", import.meta.env.NODE_ENV);
+// console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
+// console.log("Supabase Key:", import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 import { createClient } from "@supabase/supabase-js";
 
