@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Edit, Trash2, Search, Filter, AlertCircle } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Filter, AlertCircle, X } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -11,6 +11,28 @@ interface QualityBenchmarkWithUser extends QualityBenchmark {
   created_by_user?: { name: string };
 }
 
+// Form data interface
+interface BenchmarkFormData {
+  name: string;
+  description: string;
+  category: string;
+  minValue: number;
+  maxValue: number;
+  targetValue: number;
+  unit: string;
+}
+
+// Form errors interface
+interface FormErrors {
+  name?: string;
+  description?: string;
+  category?: string;
+  minValue?: string;
+  maxValue?: string;
+  targetValue?: string;
+  unit?: string;
+}
+
 export const QualityBenchmarks: React.FC = () => {
   const [benchmarks, setBenchmarks] = useState<QualityBenchmarkWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,23 +41,79 @@ export const QualityBenchmarks: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<BenchmarkFormData>({
+    name: "",
+    description: "",
+    category: "",
+    minValue: 0,
+    maxValue: 100,
+    targetValue: 50,
+    unit: "",
+  });
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchBenchmarks = useCallback(async () => {
     try {
       setError(null);
-      const { data, error } = await supabase
-        .from("quality_benchmarks")
-        .select(
-          `
-          *,
-          created_by_user:users!quality_benchmarks_created_by_fkey(name)
-        `
-        )
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+      
+      // Dummy data for benchmarks
+      const dummyBenchmarks: QualityBenchmarkWithUser[] = [
+        {
+          id: "1",
+          name: "Temperature Control",
+          description: "Maintain optimal temperature range for production processes to ensure product quality and safety standards.",
+          category: "Safety",
+          minValue: 18,
+          maxValue: 25,
+          unit: "°C",
+          isActive: true,
+          createdAt: new Date("2024-01-15T10:30:00Z"),
+          createdBy: "user1",
+          created_by_user: { name: "John Smith" }
+        },
+        {
+          id: "2",
+          name: "Pressure Monitoring",
+          description: "Monitor system pressure to prevent equipment damage and ensure operational efficiency.",
+          category: "Quality Control",
+          minValue: 100,
+          maxValue: 150,
+          unit: "PSI",
+          isActive: true,
+          createdAt: new Date("2024-01-20T14:15:00Z"),
+          createdBy: "user2",
+          created_by_user: { name: "Sarah Johnson" }
+        },
+        {
+          id: "3",
+          name: "pH Level Control",
+          description: "Maintain proper pH levels in chemical processes to ensure product consistency and safety.",
+          category: "Environmental",
+          minValue: 6.5,
+          maxValue: 7.5,
+          unit: "pH",
+          isActive: true,
+          createdAt: new Date("2024-02-01T09:45:00Z"),
+          createdBy: "user3",
+          created_by_user: { name: "Mike Chen" }
+        },
+        {
+          id: "4",
+          name: "Humidity Management",
+          description: "Control humidity levels in storage areas to prevent product degradation and maintain quality.",
+          category: "Process Efficiency",
+          minValue: 40,
+          maxValue: 60,
+          unit: "%",
+          isActive: true,
+          createdAt: new Date("2024-02-10T16:20:00Z"),
+          createdBy: "user4",
+          created_by_user: { name: "Emily Davis" }
+        }
+      ];
 
-      if (error) throw error;
-      setBenchmarks(data || []);
+      setBenchmarks(dummyBenchmarks);
     } catch (error) {
       console.error("Error fetching benchmarks:", error);
       setError("Failed to load benchmarks. Please try again.");
@@ -70,6 +148,101 @@ export const QualityBenchmarks: React.FC = () => {
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+
+    if (!formData.name.trim()) {
+      errors.name = "Name is required";
+    }
+
+    if (!formData.category.trim()) {
+      errors.category = "Category is required";
+    }
+
+    if (formData.minValue >= formData.maxValue) {
+      errors.minValue = "Minimum value must be less than maximum value";
+    }
+
+    if (formData.targetValue < formData.minValue || formData.targetValue > formData.maxValue) {
+      errors.targetValue = "Target value must be within the min-max range";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from("quality_benchmarks")
+        .insert([
+          {
+            name: formData.name.trim(),
+            description: formData.description.trim(),
+            category: formData.category.trim(),
+            min_value: formData.minValue,
+            max_value: formData.maxValue,
+            target_value: formData.targetValue,
+            unit: formData.unit.trim(),
+            is_active: true,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add to local state
+      setBenchmarks((prev) => [data, ...prev]);
+      
+      // Reset form and close modal
+      setFormData({
+        name: "",
+        description: "",
+        category: "",
+        minValue: 0,
+        maxValue: 100,
+        targetValue: 50,
+        unit: "",
+      });
+      setFormErrors({});
+      setShowCreateForm(false);
+    } catch (error) {
+      console.error("Error creating benchmark:", error);
+      setError("Failed to create benchmark. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof BenchmarkFormData, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      category: "",
+      minValue: 0,
+      maxValue: 100,
+      targetValue: 50,
+      unit: "",
+    });
+    setFormErrors({});
   };
 
   const filteredBenchmarks = benchmarks.filter((benchmark) => {
@@ -244,7 +417,7 @@ export const QualityBenchmarks: React.FC = () => {
 
               <div className="flex items-center justify-between text-xs text-sage-600">
                 <span>By {benchmark.created_by_user?.name || "Unknown"}</span>
-                <span>{formatDate(benchmark.createdAt)}</span>
+                <span>{formatDate(benchmark.createdAt.toString())}</span>
               </div>
             </div>
           </Card>
@@ -291,6 +464,142 @@ export const QualityBenchmarks: React.FC = () => {
             )}
           </div>
         </Card>
+      )}
+
+      {/* Add Benchmark Modal */}
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-sage-200">
+              <div>
+                <h2 className="text-xl font-semibold text-hunter-900">
+                  Add New Benchmark
+                </h2>
+                <p className="text-sage-600 text-sm mt-1">
+                  Create a new quality standard for your organization
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCreateForm(false)}
+                className="p-2 hover:bg-sage-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-sage-600" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form className="p-6 space-y-6">
+              {/* Name Field */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-hunter-900 mb-2">
+                  Benchmark Name *
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="e.g., Temperature Control, Pressure Monitoring"
+                  className="w-full"
+                />
+              </div>
+
+              {/* Description Field */}
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-hunter-900 mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  placeholder="Provide a detailed description of this benchmark..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-sage-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-hunter-500 focus:border-hunter-500 bg-ivory-50 text-hunter-900 resize-none"
+                />
+              </div>
+
+              {/* Category Field */}
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-hunter-900 mb-2">
+                  Category *
+                </label>
+                <Input
+                  id="category"
+                  type="text"
+                  placeholder="e.g., Safety, Quality Control, Environmental"
+                  className="w-full"
+                />
+              </div>
+
+              {/* Value Range Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="minValue" className="block text-sm font-medium text-hunter-900 mb-2">
+                    Minimum Value *
+                  </label>
+                  <Input
+                    id="minValue"
+                    type="number"
+                    placeholder="0"
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="maxValue" className="block text-sm font-medium text-hunter-900 mb-2">
+                    Maximum Value *
+                  </label>
+                  <Input
+                    id="maxValue"
+                    type="number"
+                    placeholder="100"
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="targetValue" className="block text-sm font-medium text-hunter-900 mb-2">
+                    Target Value *
+                  </label>
+                  <Input
+                    id="targetValue"
+                    type="number"
+                    placeholder="50"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Unit Field */}
+              <div>
+                <label htmlFor="unit" className="block text-sm font-medium text-hunter-900 mb-2">
+                  Unit of Measurement
+                </label>
+                <Input
+                  id="unit"
+                  type="text"
+                  placeholder="e.g., °C, PSI, %, mg/L"
+                  className="w-full"
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end space-x-3 pt-6 border-t border-sage-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCreateForm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-hunter-600 hover:bg-hunter-700"
+                >
+                  Create Benchmark
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
