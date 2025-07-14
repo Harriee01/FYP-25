@@ -29,8 +29,8 @@ import {
 // This is sample data.
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
+    name: "Evans",
+    email: "evanstwumasi@gmail.com",
     avatar: "/avatars/shadcn.jpg",
   },
   teams: [
@@ -52,12 +52,6 @@ const data = {
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "/Dashboard",
-      icon: TerminalSquare,
-      isActive: true,
-    },
-    {
       title: "Models",
       url: "#",
       icon: Bot,
@@ -71,23 +65,6 @@ const data = {
       title: "Settings",
       url: "#",
       icon: Settings2,
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
     },
   ],
 };
@@ -118,8 +95,6 @@ export function AppSidebar({
           activeTab={activeTab}
           onTabChange={onTabChange}
         />
-
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
