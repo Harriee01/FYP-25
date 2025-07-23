@@ -26,10 +26,7 @@ import {
   FileText,
   CheckCircle,
   AlertCircle,
-  Calendar,
-  Settings,
   Shield,
-  Clock,
   Star,
   TrendingUp,
 } from "lucide-react";
