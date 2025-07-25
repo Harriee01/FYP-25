@@ -75,11 +75,6 @@ const AuthenticatedApp: React.FC = () => {
       key: "settings",
       icon: Settings2,
     },
-    {
-      title: "Playground",
-      key: "playground",
-      icon: TerminalSquare,
-    },
   ];
 
   // ✅ Tab-based content rendering
@@ -101,13 +96,7 @@ const AuthenticatedApp: React.FC = () => {
         return <ProperAuditWorkflow />;
       case "settings":
         return <Settings />;
-      case "playground":
-        return (
-          <div>
-            <h1 className="text-2xl font-bold">Welcome to the Playground</h1>
-            <p className="text-muted-foreground">Experiment here.</p>
-          </div>
-        );
+
       default:
         return <Dashboard onNavigate={setActiveTab} />;
     }
